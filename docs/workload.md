@@ -52,4 +52,4 @@ Use old dates from the dataset as well as current newly generated dates. Default
 6. Start mixed sessions and observe errors, outcome frequencies, duration and workload growth. Ordinary blocking/deadlocks may occur under load; do not hide failures or add deliberate transaction defects. Distinguish correctness failures from tuning opportunities.
 7. Restore from backup and repeat installation and a compact smoke run. Repeat on the release 2024-04 database; do not require its execution plans to match the custom-index research server.
 
-No SQL procedures were implemented or tested as part of this assessment. The research inspection used metadata and bounded reads only.
+The original research inspection used metadata and bounded reads only. Step-1 implementation and database testing are recorded separately in [the tag implementation notes](components/07-tags-implementation.md); full-workload validation remains outstanding.

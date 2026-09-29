@@ -3,9 +3,9 @@
 ## Scope and ownership
 
 Base tables: Read Tags, Posts, Users.
-Dependencies: Owns the only shared function; deploy it first.
+Dependencies: Owns the only shared function; deploy it first for downstream components. The three tag procedures do not need to call it.
 
-Own future files under `sql/07-tags/` and `examples/07-tags/`; do not edit other components. Deliver working code for this assignment, examples, and a short implementation/validation note. This brief authorizes file preparation, not deployment to the research server.
+Own future files under `sql/07-tags/` and `examples/07-tags/`; do not edit other components. Deliver working code for this assignment, examples, and a short implementation/validation note. Deployment/testing was separately authorized for step 1. See [implementation notes](07-tags-implementation.md) for the delivered files and validation.
 
 ## Procedure contracts
 

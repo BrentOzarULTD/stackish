@@ -4,10 +4,11 @@ A Stack Overflow database workload built from stored procedures, for SQLQueryStr
 
 The implementation floor is SQL Server 2025 with compatibility level 170.
 
-The project is currently in the design phase. The assessment uses the 2018-06 research database; the planned release targets the 2024-04 dataset. No procedures have been implemented or deployed yet.
+Step 1, tags and parsing, is implemented for review: three read procedures and the shared tag parser. The assessment and current tests use the 2018-06 research database; the planned release targets the 2024-04 dataset. The remaining components are still planned.
 
 Start with the [design assessment](docs/design.md), then choose one of the [ten component assignments](docs/components/README.md). The proposed scope is **42 stored procedures and one tag-parsing function**.
 
+- [Step 1 installation, examples and validation](docs/components/07-tags-implementation.md)
 - [Shared behavior and interfaces](docs/contracts.md)
 - [Result-set definitions](docs/result-shapes.md)
 - [Observed database schema and indexes](docs/research/schema.md)
