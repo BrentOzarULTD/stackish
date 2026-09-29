@@ -1,6 +1,6 @@
 # Stackish design assessment
 
-Assessment recorded September 29, 2026 using read-only inspection. Step 1 (tags and parsing) has since been implemented for review; see [implementation notes](components/07-tags-implementation.md). The remaining components and complete workload are still planned.
+Assessment recorded September 29, 2026 using read-only inspection. Step 1 (tags and parsing) and step 2 (users) have since been implemented for review; see the [tags](components/07-tags-implementation.md) and [users](components/01-users-implementation.md) notes. The remaining components and complete workload are still planned.
 
 ## Purpose and boundaries
 

@@ -55,6 +55,12 @@ Deployment order is simpler than the recommended development sequence: verify SQ
 - A procedure using a local temp table may not support static result discovery through `sys.dm_exec_describe_first_result_set`. Verify its actual result through execution as well.
 - Rollback-based fixture tests consume identity values even when their rows are rolled back. Use disposable restores and never reseed to hide the gaps.
 
+## Lessons from step 2
+
+- The database collation ignores case and trailing spaces, so `=`/`<>` cannot detect a no-op edit; compare bytes (see [users implementation](components/01-users-implementation.md)).
+- A `THROW` under the caller's `XACT_ABORT ON` dooms an open transaction (`XACT_STATE() = -1`); procedures inherit that setting. Choose each procedure's transaction policy for correctness (multi-statement writes may well want `XACT_ABORT ON`), and have tests that continue after caught errors set the session option explicitly or isolate those cases.
+- `EXEC` parameter values cannot be expressions (`REPLICATE(...)`, concatenation); assign them to variables first.
+
 ## Integration ownership
 
 The integration session owns the deployment manifest, object-count check, final schema preflight, SQLQueryStress packaging and cross-component verification. Deployment creates the parser first, then all procedures; there are no required inter-procedure dependencies. Integration can fix correctness and contract disagreements, but must preserve the diversity of implementation styles.
