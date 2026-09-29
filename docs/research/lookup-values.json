@@ -1,0 +1,258 @@
+{
+  "post_types": [
+    {
+      "Id": 1,
+      "Type": "Question"
+    },
+    {
+      "Id": 2,
+      "Type": "Answer"
+    },
+    {
+      "Id": 3,
+      "Type": "Wiki"
+    },
+    {
+      "Id": 4,
+      "Type": "TagWikiExerpt"
+    },
+    {
+      "Id": 5,
+      "Type": "TagWiki"
+    },
+    {
+      "Id": 6,
+      "Type": "ModeratorNomination"
+    },
+    {
+      "Id": 7,
+      "Type": "WikiPlaceholder"
+    },
+    {
+      "Id": 8,
+      "Type": "PrivilegeWiki"
+    }
+  ],
+  "vote_types": [
+    {
+      "Id": 1,
+      "Name": "AcceptedByOriginator"
+    },
+    {
+      "Id": 2,
+      "Name": "UpMod"
+    },
+    {
+      "Id": 3,
+      "Name": "DownMod"
+    },
+    {
+      "Id": 4,
+      "Name": "Offensive"
+    },
+    {
+      "Id": 5,
+      "Name": "Favorite"
+    },
+    {
+      "Id": 6,
+      "Name": "Close"
+    },
+    {
+      "Id": 7,
+      "Name": "Reopen"
+    },
+    {
+      "Id": 8,
+      "Name": "BountyStart"
+    },
+    {
+      "Id": 9,
+      "Name": "BountyClose"
+    },
+    {
+      "Id": 10,
+      "Name": "Deletion"
+    },
+    {
+      "Id": 11,
+      "Name": "Undeletion"
+    },
+    {
+      "Id": 12,
+      "Name": "Spam"
+    },
+    {
+      "Id": 13,
+      "Name": "InformModerator"
+    },
+    {
+      "Id": 15,
+      "Name": "ModeratorReview"
+    },
+    {
+      "Id": 16,
+      "Name": "ApproveEditSuggestion"
+    }
+  ],
+  "history_types": [
+    {
+      "Id": 1,
+      "Type": "InitialTitle"
+    },
+    {
+      "Id": 2,
+      "Type": "InitialBody"
+    },
+    {
+      "Id": 3,
+      "Type": "InitialTags"
+    },
+    {
+      "Id": 4,
+      "Type": "EditTitle"
+    },
+    {
+      "Id": 5,
+      "Type": "EditBody"
+    },
+    {
+      "Id": 6,
+      "Type": "EditTags"
+    },
+    {
+      "Id": 7,
+      "Type": "RollbackTitle"
+    },
+    {
+      "Id": 8,
+      "Type": "RollbackBody"
+    },
+    {
+      "Id": 9,
+      "Type": "RollbackTags"
+    },
+    {
+      "Id": 10,
+      "Type": "PostClosed"
+    },
+    {
+      "Id": 11,
+      "Type": "PostReopened"
+    },
+    {
+      "Id": 12,
+      "Type": "PostDeleted"
+    },
+    {
+      "Id": 13,
+      "Type": "PostUndeleted"
+    },
+    {
+      "Id": 14,
+      "Type": "PostLocked"
+    },
+    {
+      "Id": 15,
+      "Type": "PostUnlocked"
+    },
+    {
+      "Id": 16,
+      "Type": "CommunityOwned"
+    },
+    {
+      "Id": 17,
+      "Type": "PostMigrated"
+    },
+    {
+      "Id": 18,
+      "Type": "QuestionMerged"
+    },
+    {
+      "Id": 19,
+      "Type": "QuestionProtected"
+    },
+    {
+      "Id": 20,
+      "Type": "QuestionUnprotected"
+    },
+    {
+      "Id": 21,
+      "Type": "PostDisassociated"
+    },
+    {
+      "Id": 22,
+      "Type": "QuestionUnmerged"
+    },
+    {
+      "Id": 23,
+      "Type": "UnknownDevRelatedEvent"
+    },
+    {
+      "Id": 24,
+      "Type": "SuggestedEditApplied"
+    },
+    {
+      "Id": 25,
+      "Type": "PostTweeted"
+    },
+    {
+      "Id": 26,
+      "Type": "VoteNullificationByDev"
+    },
+    {
+      "Id": 27,
+      "Type": "PostUnmigrated"
+    },
+    {
+      "Id": 28,
+      "Type": "UnknownSuggestionEvent"
+    },
+    {
+      "Id": 29,
+      "Type": "UnknownModeratorEvent"
+    },
+    {
+      "Id": 30,
+      "Type": "UnknownEvent"
+    },
+    {
+      "Id": 31,
+      "Type": "CommentDiscussionMovedToChat"
+    },
+    {
+      "Id": 33,
+      "Type": "PostNoticeAdded"
+    },
+    {
+      "Id": 34,
+      "Type": "PostNoticeRemoved"
+    },
+    {
+      "Id": 35,
+      "Type": "PostMigratedAway"
+    },
+    {
+      "Id": 36,
+      "Type": "PostMigratedHere"
+    },
+    {
+      "Id": 37,
+      "Type": "PostMergeSource"
+    },
+    {
+      "Id": 38,
+      "Type": "PostMergeDestination"
+    }
+  ],
+  "link_types": [
+    {
+      "Id": 1,
+      "Type": "Linked"
+    },
+    {
+      "Id": 3,
+      "Type": "Duplicate"
+    }
+  ]
+}
