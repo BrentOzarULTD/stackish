@@ -1,0 +1,40 @@
+# Step 2: users implementation
+
+Implements [component 01](01-users.md): six procedures on SQL Server 2025 / compatibility 170. No parser or other component is used.
+
+| Object | Purpose |
+|---|---|
+| `dbo.Stackish_CreateUser` | Insert a user with the shared initial values |
+| `dbo.Stackish_UpdateUserProfile` | Replace the five editable fields; `NoChange` when identical |
+| `dbo.Stackish_RecordUserAccess` | Set `LastAccessDate` to now |
+| `dbo.Stackish_RecordProfileView` | `Views = Views + 1` |
+| `dbo.Stackish_GetUserCard` | One UserCard row |
+| `dbo.Stackish_ListUsers` | Directory by reputation / newest / name, literal prefix, paging |
+
+```sh
+sqlcmd -S <server> -d <database> -b -i sql/01-users/deploy.sql
+sqlcmd -S <server> -d <database> -b -i tests/01-users/metadata.sql
+sqlcmd -S <server> -d <database> -b -t 600 -i tests/01-users/acceptance.sql     # mutates, rolled back
+tests/01-users/concurrency.sh <server> <database> <login>                        # mutates, commits then deletes one fixture user
+sqlcmd -S <server> -d <database> -b -i examples/01-users/calls.sql               # mutates
+```
+
+## Implementation choices
+
+- **Validation** works on the full `nvarchar(max)` input before it is converted to the column size: DisplayName required, not blank (space/tab/CR/LF) and at most 40 UTF-16 units; Location at most 100; WebsiteUrl at most 200; Age not negative. Errors are `THROW` 50101-50105 (write text/age), 50111 (NULL UserId on writes) and 50121/50122 (list paging/sort). Optional text is stored as supplied, including an empty string; only NULL clears. Nothing is trimmed.
+- **Transactions**: every write is a single statement, so it is atomic without an explicit transaction, and a caller's transaction is neither started nor committed. The procedures deliberately do not `SET XACT_ABORT ON`, so a validation error does not doom the caller's transaction.
+- **NoChange detection** compares raw bytes (`CAST(... AS varbinary(max))` under `EXCEPT`, which also treats NULL as equal to NULL). A plain `<>` would use the case-insensitive, trailing-space-insensitive collation and report `bob` -> `Bob` as `NoChange`. The compare is part of the UPDATE's WHERE clause, so an identical profile writes nothing.
+- **Concurrency**: `RecordProfileView` computes `Views + 1` from the locked row inside one UPDATE, so parallel calls serialize on the row lock and no increment is lost. Concurrent profile updates are last-writer-wins per whole call.
+- **Special users (judgment call)**: `GetUserCard` returns imported nonpositive users (only Id -1 on the 2018-06 copy). Writes on `Id <= 0` return `NotFound` without touching the row, on the reading that Community/placeholder accounts are not editable. `ListUsers` includes them. NULL `@UserId` throws on writes and returns an empty set on `GetUserCard`.
+- **ListUsers**: one SELECT per sort (no `CASE` ordering), `Id` as tie-breaker (ascending for reputation/name, descending for newest). The prefix is escaped (`!`, `%`, `_`, `[`) and used with `LIKE ... ESCAPE`, so it is literal; matching follows the database collation. NULL or empty prefix means no filter. Newest and name sorts scan `Users` unless the target has a suitable index; none was added.
+- The writes report Applied/NoChange/NotFound only; `Conflict` has no use here. `RecordUserAccess` reports `Applied` whenever the user exists, even if the timestamp lands on the same value.
+- No 2025-only feature was needed.
+
+## Validation status
+
+Session limit: the research server (SQL Server 2025 CU9, `StackOverflow` 2018-06) was reachable, but the session's instruction was not to make database changes. So **nothing was deployed and no test was executed**. What was actually run, read-only:
+
+- Every procedure script and both T-SQL test scripts compiled under `SET NOEXEC ON` on the server without error; confirmed afterward that no Stackish user objects or fixture rows exist.
+- Ad hoc SELECTs confirming the raw-byte EXCEPT comparison distinguishes `'a '` from `'a'` and `'Bob'` from `'bob'` and treats identical values as equal, that `TRIM(... FROM ...)` empties tab/CR/LF/space strings, that a supplementary character is 2 UTF-16 units, that `LIKE ... ESCAPE '!'` works, that no `Users.Views` is NULL and that the only nonpositive user is Id -1.
+
+Authored but **not executed**: [acceptance.sql](../../tests/01-users/acceptance.sql) (creation defaults, Unicode/duplicate names, boundary lengths, invalid input, optional-field clearing, unchanged/case-only/trailing-space updates, untouched non-editable fields, missing/special IDs for every write and read, both counters, all three sorts with ties, paging, literal prefixes, invalid list arguments; all fixture rows rolled back), [metadata.sql](../../tests/01-users/metadata.sql) (parameters, defaults, result shapes asserted with `THROW`), [concurrency.sh](../../tests/01-users/concurrency.sh) (8 x 200 parallel `RecordProfileView` calls must add exactly 1,600) and the [examples](../../examples/01-users/calls.sql). `metadata.sql` relies on static result discovery for `ListUsers` across its three branches; if that reports an error on execution it needs a runtime `INSERT ... EXEC` check instead.
