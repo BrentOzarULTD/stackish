@@ -3,6 +3,7 @@
 -- by the fixture rows are not returned by the rollback; do not reseed.
 -- Concurrent counter increments are covered separately by tests/01-users/concurrency.sh.
 SET NOCOUNT ON;
+SET XACT_ABORT OFF;   -- explicit: the invalid-input cases catch errors and keep going inside one transaction
 IF @@TRANCOUNT > 0 THROW 51000, 'Run outside an existing transaction.', 1;
 IF NOT EXISTS (SELECT 1 FROM sys.procedures WHERE name = N'Stackish_ListUsers')
     THROW 51000, 'Deploy sql/01-users/deploy.sql first.', 1;
@@ -206,58 +207,60 @@ BEGIN TRY
            (N'zzLstXyz',      2, '20190104', '20190104', 0,0,0, NULL),
            (N'zzLst!bang',    1, '20190105', '20190105', 0,0,0, NULL);
     DECLARE @beta int = (SELECT Id FROM @u WHERE Tag='beta'), @alpha int = (SELECT Id FROM @u WHERE Tag='alpha'), @gamma int = (SELECT Id FROM @u WHERE Tag='gamma');
-    DECLARE @order TABLE (Pos int IDENTITY, UserId int, DisplayName nvarchar(40), Reputation int, Location nvarchar(100), CreationDate datetime, LastAccessDate datetime);
+    CREATE TABLE #order (Pos int IDENTITY, UserId int, DisplayName nvarchar(40), Reputation int, Location nvarchar(100), CreationDate datetime, LastAccessDate datetime);
 
     -- reputation: 900 first, tie at 100 broken by Id ascending (beta was inserted before alpha).
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate)
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate)
         EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst', @Sort = 'reputation';
-    IF (SELECT COUNT(*) FROM @order) <> 8 THROW 51050, 'Prefix should match exactly the eight fixtures.', 1;
-    IF (SELECT UserId FROM @order WHERE Pos = 1) <> @gamma OR (SELECT UserId FROM @order WHERE Pos = 2) <> @beta OR (SELECT UserId FROM @order WHERE Pos = 3) <> @alpha
-       OR EXISTS (SELECT 1 FROM @order o1 JOIN @order o2 ON o2.Pos = o1.Pos + 1 WHERE o1.Reputation < o2.Reputation)
+    IF (SELECT COUNT(*) FROM #order) <> 8 THROW 51050, 'Prefix should match exactly the eight fixtures.', 1;
+    IF (SELECT UserId FROM #order WHERE Pos = 1) <> @gamma OR (SELECT UserId FROM #order WHERE Pos = 2) <> @beta OR (SELECT UserId FROM #order WHERE Pos = 3) <> @alpha
+       OR EXISTS (SELECT 1 FROM #order o1 JOIN #order o2 ON o2.Pos = o1.Pos + 1 WHERE o1.Reputation < o2.Reputation)
         THROW 51051, 'reputation sort: descending, Id ascending on ties.', 1;
     -- default sort is reputation and the default prefix works
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers;
-    IF (SELECT COUNT(*) FROM @order) <> 30 OR EXISTS (SELECT 1 FROM @order o1 JOIN @order o2 ON o2.Pos = o1.Pos + 1 WHERE o1.Reputation < o2.Reputation)
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers;
+    IF (SELECT COUNT(*) FROM #order) <> 30 OR EXISTS (SELECT 1 FROM #order o1 JOIN #order o2 ON o2.Pos = o1.Pos + 1 WHERE o1.Reputation < o2.Reputation)
         THROW 51052, 'Defaults: 30 rows sorted by reputation.', 1;
 
     -- newest: CreationDate descending
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate)
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate)
         EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst', @Sort = 'newest';
-    IF (SELECT UserId FROM @order WHERE Pos = 1) <> @alpha OR (SELECT UserId FROM @order WHERE Pos = 2) <> @gamma OR (SELECT UserId FROM @order WHERE Pos = 3) <> @beta
-       OR EXISTS (SELECT 1 FROM @order o1 JOIN @order o2 ON o2.Pos = o1.Pos + 1 WHERE o1.CreationDate < o2.CreationDate)
+    IF (SELECT COUNT(*) FROM #order) <> 8 THROW 51053, 'newest sort should return the eight fixtures.', 1;
+    IF (SELECT UserId FROM #order WHERE Pos = 1) <> @alpha OR (SELECT UserId FROM #order WHERE Pos = 2) <> @gamma OR (SELECT UserId FROM #order WHERE Pos = 3) <> @beta
+       OR EXISTS (SELECT 1 FROM #order o1 JOIN #order o2 ON o2.Pos = o1.Pos + 1 WHERE o1.CreationDate < o2.CreationDate)
         THROW 51053, 'newest sort: CreationDate descending.', 1;
 
     -- name: DisplayName ascending (case-insensitive collation, so Alpha < beta < gamma)
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate)
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate)
         EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst', @Sort = 'name';
-    IF EXISTS (SELECT 1 FROM @order o1 JOIN @order o2 ON o2.Pos = o1.Pos + 1 WHERE o1.DisplayName > o2.DisplayName COLLATE DATABASE_DEFAULT)
-       OR (SELECT Pos FROM @order WHERE UserId = @alpha) > (SELECT Pos FROM @order WHERE UserId = @beta)
-       OR (SELECT Pos FROM @order WHERE UserId = @beta) > (SELECT Pos FROM @order WHERE UserId = @gamma)
+    IF (SELECT COUNT(*) FROM #order) <> 8 THROW 51054, 'name sort should return the eight fixtures.', 1;
+    IF EXISTS (SELECT 1 FROM #order o1 JOIN #order o2 ON o2.Pos = o1.Pos + 1 WHERE o1.DisplayName > o2.DisplayName COLLATE DATABASE_DEFAULT)
+       OR (SELECT Pos FROM #order WHERE UserId = @alpha) > (SELECT Pos FROM #order WHERE UserId = @beta)
+       OR (SELECT Pos FROM #order WHERE UserId = @beta) > (SELECT Pos FROM #order WHERE UserId = @gamma)
         THROW 51054, 'name sort: DisplayName ascending.', 1;
 
     -- paging: offset 1, size 2 of the reputation order = beta, alpha
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate)
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate)
         EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst', @Sort = 'reputation', @Offset = 1, @PageSize = 2;
-    IF (SELECT COUNT(*) FROM @order) <> 2 OR (SELECT UserId FROM @order WHERE Pos = 1) <> @beta OR (SELECT UserId FROM @order WHERE Pos = 2) <> @alpha
+    IF (SELECT COUNT(*) FROM #order) <> 2 OR (SELECT UserId FROM #order WHERE Pos = 1) <> @beta OR (SELECT UserId FROM #order WHERE Pos = 2) <> @alpha
         THROW 51055, 'Paging returned the wrong window.', 1;
 
     -- literal prefixes: %, _, [ and the escape character match only themselves
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst%';
-    IF (SELECT COUNT(*) FROM @order) <> 1 OR NOT EXISTS (SELECT 1 FROM @order WHERE DisplayName = N'zzLst%pct') THROW 51056, '% must be literal.', 1;
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst_';
-    IF (SELECT COUNT(*) FROM @order) <> 1 OR NOT EXISTS (SELECT 1 FROM @order WHERE DisplayName = N'zzLst_und') THROW 51057, '_ must be literal.', 1;
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst[';
-    IF (SELECT COUNT(*) FROM @order) <> 1 OR NOT EXISTS (SELECT 1 FROM @order WHERE DisplayName = N'zzLst[br') THROW 51058, '[ must be literal.', 1;
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst!';
-    IF (SELECT COUNT(*) FROM @order) <> 1 OR NOT EXISTS (SELECT 1 FROM @order WHERE DisplayName = N'zzLst!bang') THROW 51059, 'The escape character must be literal.', 1;
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'ZZLST X';
-    IF EXISTS (SELECT 1 FROM @order) THROW 51060, 'Nonmatching prefix should be empty.', 1;
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzlstx';
-    IF (SELECT COUNT(*) FROM @order) <> 1 THROW 51061, 'Prefix matching follows the database collation (case-insensitive here).', 1;
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'';
-    IF (SELECT COUNT(*) FROM @order) <> 30 THROW 51062, 'Empty prefix means no filter.', 1;
-    DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzStk Zoë 名';
-    IF (SELECT COUNT(*) FROM @order) <> 1 THROW 51063, 'Unicode prefix should match the one remaining Unicode fixture (the other was renamed).', 1;
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst%';
+    IF (SELECT COUNT(*) FROM #order) <> 1 OR NOT EXISTS (SELECT 1 FROM #order WHERE DisplayName = N'zzLst%pct') THROW 51056, '% must be literal.', 1;
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst_';
+    IF (SELECT COUNT(*) FROM #order) <> 1 OR NOT EXISTS (SELECT 1 FROM #order WHERE DisplayName = N'zzLst_und') THROW 51057, '_ must be literal.', 1;
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst[';
+    IF (SELECT COUNT(*) FROM #order) <> 1 OR NOT EXISTS (SELECT 1 FROM #order WHERE DisplayName = N'zzLst[br') THROW 51058, '[ must be literal.', 1;
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzLst!';
+    IF (SELECT COUNT(*) FROM #order) <> 1 OR NOT EXISTS (SELECT 1 FROM #order WHERE DisplayName = N'zzLst!bang') THROW 51059, 'The escape character must be literal.', 1;
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'ZZLST X';
+    IF EXISTS (SELECT 1 FROM #order) THROW 51060, 'Nonmatching prefix should be empty.', 1;
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzlstx';
+    IF (SELECT COUNT(*) FROM #order) <> 1 THROW 51061, 'Prefix matching follows the database collation (case-insensitive here).', 1;
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'';
+    IF (SELECT COUNT(*) FROM #order) <> 30 THROW 51062, 'Empty prefix means no filter.', 1;
+    TRUNCATE TABLE #order; INSERT #order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzStk Zoë 名';
+    IF (SELECT COUNT(*) FROM #order) <> 1 THROW 51063, 'Unicode prefix should match the one remaining Unicode fixture (the other was renamed).', 1;
 
     -- invalid arguments
     SET @i = 1;

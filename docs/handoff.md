@@ -58,7 +58,7 @@ Deployment order is simpler than the recommended development sequence: verify SQ
 ## Lessons from step 2
 
 - The database collation ignores case and trailing spaces, so `=`/`<>` cannot detect a no-op edit; compare bytes (see [users implementation](components/01-users-implementation.md)).
-- Do not `SET XACT_ABORT ON` in a procedure that tests will call inside a transaction with TRY/CATCH: a `THROW` then dooms the caller's transaction. Single-statement writes do not need it.
+- A `THROW` under the caller's `XACT_ABORT ON` dooms an open transaction (`XACT_STATE() = -1`); procedures inherit that setting. Choose each procedure's transaction policy for correctness (multi-statement writes may well want `XACT_ABORT ON`), and have tests that continue after caught errors set the session option explicitly or isolate those cases.
 - `EXEC` parameter values cannot be expressions (`REPLICATE(...)`, concatenation); assign them to variables first.
 
 ## Integration ownership
