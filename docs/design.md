@@ -1,6 +1,6 @@
 # Stackish design assessment
 
-Status: design only, September 29, 2026. No database objects or data were changed. This repository currently supplies implementation assignments, not an executable workload.
+Assessment recorded September 29, 2026 using read-only inspection. Step 1 (tags and parsing) has since been implemented for review; see [implementation notes](components/07-tags-implementation.md). The remaining components and complete workload are still planned.
 
 ## Purpose and boundaries
 
@@ -74,7 +74,7 @@ Acceptance changes only AcceptedAnswerId and activity; it does not replay vote t
 ## Phases and handoff order
 
 1. **Assessment (this delivery):** recorded schema, features, interfaces, boundaries, and assignments.
-2. **Independent implementation:** give each LLM the common handoff and one component brief. Implement tags first because its parser is the one shared function; users, comments, votes, moderation, and badges can be authored independently. Questions, discovery, profiles, and tag analytics use the parser. Answers follow the shared rules but do not call question procedures. Authoring can overlap; deployment must put the parser first. Follow the [ordered implementation plan](handoff.md#ordered-implementation-plan) for the recommended handoff sequence.
+2. **Independent implementation:** give each LLM the common handoff and one component brief. Implement tags first because its parser is the one shared function; users, comments, votes, moderation, and badges can be authored independently. Questions, token-based discovery, and profiles use the parser; single-tag analytics can match a complete delimiter-wrapped tag directly. Answers follow the shared rules but do not call question procedures. Authoring can overlap; deployment must put the parser first. Follow the [ordered implementation plan](handoff.md#ordered-implementation-plan) for the recommended handoff sequence.
 3. **Integration:** assemble scripts, check output contracts, verify write invariants and concurrent calls on an authorized disposable restore. Resolve interface disagreements without restyling all code.
 4. **Workload packaging:** parameter queries and independent SQLQueryStress call scripts, then mixed sessions; no need to chain new IDs between operations.
 5. **Release validation:** repeat smoke/concurrency checks against 2024-04, confirm schema compatibility and runnable examples, publish installation and restore instructions. No permanent data cleanup mechanism.

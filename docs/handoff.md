@@ -31,7 +31,7 @@ The component numbers identify ownership, not development order. Follow this seq
 
 | Step | Component | Why this position / prerequisites |
 |---|---|---|
-| 1 | [07 Tags and parsing](components/07-tags.md) | Implement and validate `dbo.Stackish_SplitTags` first, then the three tag procedures. Questions, discovery, profile top tags, and tag analytics use this function. No other component is required. |
+| 1 | [07 Tags and parsing](components/07-tags.md) | Implement and validate `dbo.Stackish_SplitTags` first, then the three tag procedures. Questions, token-based discovery, and profile top tags use this function. Single-tag analytics may use exact delimiter matching instead. No other component is required. |
 | 2 | [01 Users](components/01-users.md) | Establish user creation and profile behavior early. No dependency on the parser or another component; imported users are already available for other components' tests. |
 | 3 | [02 Questions](components/02-questions.md) | Requires the parser from step 1. Establish tag-count and initial/edit-history behavior before integrating other content writers. Does not call user procedures. |
 | 4 | [03 Answers](components/03-answers.md) | Integrate parent answer counts, activity, history and acceptance with question behavior. No required procedure dependency: existing questions and users are sufficient to develop it independently. |
@@ -43,12 +43,20 @@ The component numbers identify ownership, not development order. Follow this seq
 | 10 | [08 Page reads and activity](components/08-pages.md) | Requires the parser from step 1. Integrate question/profile result sets after the underlying behavior and shared output shapes are exercised. Pages query base tables directly and need not call the other components' procedures. |
 | 11 | Integration and workload packaging | Once all ten assignments are complete, assemble deployment scripts, check the 43-object inventory and interfaces, run cross-component checks on an authorized disposable restore, and package SQLQueryStress calls as described in [the workload plan](workload.md). |
 
-If using separate sessions concurrently, steps 2, 4, 5, 6, 7 and 9 can start immediately. Steps 3, 8 and 10 can be authored against the documented parser interface, but need its implementation for execution checks. Within step 1, tag analytics likewise needs the parser. No component needs a newly created user, question or answer from another component before it can operate on the imported database.
+If using separate sessions concurrently, steps 2, 4, 5, 6, 7 and 9 can start immediately. Steps 3, 8 and 10 can be authored against the documented parser interface, but need its implementation for execution checks. The step-1 leaderboard uses exact delimiter matching and does not call the parser. No component needs a newly created user, question or answer from another component before it can operate on the imported database.
 
 Deployment order is simpler than the recommended development sequence: verify SQL Server 2025 / compatibility 170 and the existing schema, create the parser, then create the 42 procedures in any order. There are no mandatory calls between procedures. Do not introduce such dependencies silently. Perform mutation tests only after database access and changes have been authorized for that implementation session.
+
+## Lessons from step 1
+
+- The parser removes duplicate tokens under database collation, so write components must validate raw syntax and duplicates separately before calling it. Validate the full input length before a bounded function parameter can truncate it.
+- Unknown tags should return before scanning Posts. Existing-tag leaderboards still require an expensive membership search on this schema; exact `<tag>` matching avoids token expansion but does not make the search indexed.
+- Tag wiki pointers may be zero, dangling or point to a different post type. Keep the catalog row and return NULL wiki text.
+- A procedure using a local temp table may not support static result discovery through `sys.dm_exec_describe_first_result_set`. Verify its actual result through execution as well.
+- Rollback-based fixture tests consume identity values even when their rows are rolled back. Use disposable restores and never reseed to hide the gaps.
 
 ## Integration ownership
 
 The integration session owns the deployment manifest, object-count check, final schema preflight, SQLQueryStress packaging and cross-component verification. Deployment creates the parser first, then all procedures; there are no required inter-procedure dependencies. Integration can fix correctness and contract disagreements, but must preserve the diversity of implementation styles.
 
-Confirm every referenced base table/column/type and required lookup ID exists on the eventual 2024-04 restore. Stop and report a mismatch rather than adding the missing schema. A performance difference from this research server is not by itself a reason to add indexes. Database changes remain forbidden in this design-stage session.
+Confirm every referenced base table/column/type and required lookup ID exists on the eventual 2024-04 restore. Stop and report a mismatch rather than adding the missing schema. A performance difference from this research server is not by itself a reason to add indexes. Database changes require authorization for the current implementation session; authorization was granted for step-1 deployment and testing on the disposable research server.
