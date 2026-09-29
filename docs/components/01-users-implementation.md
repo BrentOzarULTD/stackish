@@ -32,9 +32,13 @@ sqlcmd -S <server> -d <database> -b -i examples/01-users/calls.sql              
 
 ## Validation status
 
-Session limit: the research server (SQL Server 2025 CU9, `StackOverflow` 2018-06) was reachable, but the session's instruction was not to make database changes. So **nothing was deployed and no test was executed**. What was actually run, read-only:
+Executed September 29, 2026 on the authorized `StackOverflow` 2018-06 research database (SQL Server 2025 CU9, compatibility 170):
 
-- Every procedure script and both T-SQL test scripts compiled under `SET NOEXEC ON` on the server without error; confirmed afterward that no Stackish user objects or fixture rows exist.
-- Ad hoc SELECTs confirming the raw-byte EXCEPT comparison distinguishes `'a '` from `'a'` and `'Bob'` from `'bob'` and treats identical values as equal, that `TRIM(... FROM ...)` empties tab/CR/LF/space strings, that a supplementary character is 2 UTF-16 units, that `LIKE ... ESCAPE '!'` works, that no `Users.Views` is NULL and that the only nonpositive user is Id -1.
+- `deploy.sql` succeeded.
+- [metadata.sql](../../tests/01-users/metadata.sql) passed (parameters, defaults, result shapes for all six).
+- [acceptance.sql](../../tests/01-users/acceptance.sql) passed, and passed again on rerun. Fixture rows were rolled back; identity values were consumed, not reseeded.
+- [concurrency.sh](../../tests/01-users/concurrency.sh): 8 workers x 200 `RecordProfileView` calls produced Views = 1,600 exactly.
+- [calls.sql](../../examples/01-users/calls.sql) ran cleanly; it leaves one committed "Example User" row on that database.
+- The first acceptance run failed on a wrong expectation in the test itself (a renamed fixture no longer matched the Unicode prefix); the test was corrected, no procedure changed.
 
-Authored but **not executed**: [acceptance.sql](../../tests/01-users/acceptance.sql) (creation defaults, Unicode/duplicate names, boundary lengths, invalid input, optional-field clearing, unchanged/case-only/trailing-space updates, untouched non-editable fields, missing/special IDs for every write and read, both counters, all three sorts with ties, paging, literal prefixes, invalid list arguments; all fixture rows rolled back), [metadata.sql](../../tests/01-users/metadata.sql) (parameters, defaults, result shapes asserted with `THROW`), [concurrency.sh](../../tests/01-users/concurrency.sh) (8 x 200 parallel `RecordProfileView` calls must add exactly 1,600) and the [examples](../../examples/01-users/calls.sql). `metadata.sql` relies on static result discovery for `ListUsers` across its three branches; if that reports an error on execution it needs a runtime `INSERT ... EXEC` check instead.
+Not covered: the 2024-04 restore, a concurrent mix of profile updates with views, and performance of the newest/name sorts on the full table.

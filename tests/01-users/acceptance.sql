@@ -257,7 +257,7 @@ BEGIN TRY
     DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'';
     IF (SELECT COUNT(*) FROM @order) <> 30 THROW 51062, 'Empty prefix means no filter.', 1;
     DELETE @order; INSERT @order (UserId, DisplayName, Reputation, Location, CreationDate, LastAccessDate) EXEC dbo.Stackish_ListUsers @NamePrefix = N'zzStk Zoë 名';
-    IF (SELECT COUNT(*) FROM @order) <> 2 THROW 51063, 'Unicode prefix should match the two Unicode fixtures.', 1;
+    IF (SELECT COUNT(*) FROM @order) <> 1 THROW 51063, 'Unicode prefix should match the one remaining Unicode fixture (the other was renamed).', 1;
 
     -- invalid arguments
     SET @i = 1;
