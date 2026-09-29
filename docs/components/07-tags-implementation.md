@@ -41,7 +41,8 @@ Executed September 29, 2026 on the authorized `StackOverflow` 2018-06 research d
 - Ran the complete read-only example script successfully against imported data, including the `.net` leaderboard and unknown-tag calls.
 - Fixture rows were rolled back. Identity allocations still advanced; no reseeding was performed.
 - After broadening blank checks to include tabs/CR/LF, reran the affected parser and invalid-input assertions successfully. That small change did not alter the already-tested catalog or leaderboard queries.
-- [Metadata checks](../../tests/07-tags/metadata.sql) passed; parameter types and directory/detail result names and types matched the contract. The leaderboard's local temp table prevents static result discovery for that branch; acceptance checks exercised its returned shape with INSERT ... EXEC.
+- [Metadata assertions](../../tests/07-tags/metadata.sql) passed. They now reject missing/wrong-kind objects, parameter count/order/name/type/length/direction mismatches, changed/missing/added defaults, and parser/directory/detail result count/order/name/type mismatches. The leaderboard's local temp table prevents static result discovery for that branch; acceptance checks exercise its returned shape with INSERT ... EXEC.
+- Verified the revised assertions against 13 deliberate deployed-definition regressions: extra/reordered/renamed/retyped/resized parameters; changed/missing/added defaults; renamed/retyped/extra/reordered result columns; and an extra parser output column. Each alteration was rolled back, the original definition was checked, and the final unmodified metadata check passed. No procedure behavior changed in this review fix.
 
 Run the checks on an authorized disposable restore:
 
@@ -51,6 +52,10 @@ sqlcmd -S <server> -d <database> -b -i tests/07-tags/metadata.sql
 ```
 
 The fixture suite assumes the research database's case-insensitive collation and unused positive ID 2147483647 for dangling-reference cases, checking the latter before use. Fixture tests should not be run inside an existing caller transaction. A failed/cancelled connection can require rollback time; let cleanup finish before restoring or rerunning.
+
+## Metadata default checks
+
+SQL Server does not expose T-SQL parameter defaults through `sys.parameters`; see [Microsoft's catalog documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-parameters-transact-sql?view=sql-server-ver17). The test therefore also compares the four simple declaration headers from `sys.sql_modules`, normalizing keyword case and spaces/tabs/line endings. This is deliberately not a general SQL parser: comments or alternative syntax inside a header fail the check and require an explicit test update. Procedure bodies are not compared.
 
 ## Limits and review focus
 
