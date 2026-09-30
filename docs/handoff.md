@@ -61,6 +61,11 @@ Deployment order is simpler than the recommended development sequence: verify SQ
 - A `THROW` under the caller's `XACT_ABORT ON` dooms an open transaction (`XACT_STATE() = -1`); procedures inherit that setting. Choose each procedure's transaction policy for correctness (multi-statement writes may well want `XACT_ABORT ON`), and have tests that continue after caught errors set the session option explicitly or isolate those cases.
 - `EXEC` parameter values cannot be expressions (`REPLICATE(...)`, concatenation); assign them to variables first.
 
+## Lessons from steps 3-5
+
+- Stored procedures captured with `INSERT ... EXEC` cannot issue `ROLLBACK`, even for an expected NotFound/Conflict branch that changed no data. For expected status returns inside an opened procedure transaction, commit the empty transaction and reserve rollback for actual error paths or changed work.
+- The shared research server may default logins to a smaller restore such as `StackOverflow2010`; explicitly target the intended disposable database before deployment/testing and verify required tables such as `PostHistory`.
+
 ## Integration ownership
 
 The integration session owns the deployment manifest, object-count check, final schema preflight, SQLQueryStress packaging and cross-component verification. Deployment creates the parser first, then all procedures; there are no required inter-procedure dependencies. Integration can fix correctness and contract disagreements, but must preserve the diversity of implementation styles.
