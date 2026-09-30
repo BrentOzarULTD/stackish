@@ -1,0 +1,2 @@
+# Pinned because exact multi-result TDS metadata uses the driver's internal columns API.
+python-tds==1.17.1

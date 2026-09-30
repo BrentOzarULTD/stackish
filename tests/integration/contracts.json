@@ -1,0 +1,2128 @@
+{
+  "Stackish_CreateUser": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@DisplayName",
+        "type": "nvarchar(max)",
+        "default": null
+      },
+      {
+        "name": "@AboutMe",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      },
+      {
+        "name": "@Location",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      },
+      {
+        "name": "@WebsiteUrl",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      },
+      {
+        "name": "@Age",
+        "type": "int",
+        "default": "NULL"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "01"
+  },
+  "Stackish_UpdateUserProfile": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@DisplayName",
+        "type": "nvarchar(max)",
+        "default": null
+      },
+      {
+        "name": "@AboutMe",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      },
+      {
+        "name": "@Location",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      },
+      {
+        "name": "@WebsiteUrl",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      },
+      {
+        "name": "@Age",
+        "type": "int",
+        "default": "NULL"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "01"
+  },
+  "Stackish_RecordUserAccess": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "01"
+  },
+  "Stackish_RecordProfileView": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "01"
+  },
+  "Stackish_GetUserCard": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "DisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "Reputation",
+          "int"
+        ],
+        [
+          "Location",
+          "nvarchar(100)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastAccessDate",
+          "datetime"
+        ]
+      ]
+    ],
+    "component": "01"
+  },
+  "Stackish_ListUsers": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@NamePrefix",
+        "type": "nvarchar(40)",
+        "default": "NULL"
+      },
+      {
+        "name": "@Sort",
+        "type": "varchar(20)",
+        "default": "'reputation'"
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "DisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "Reputation",
+          "int"
+        ],
+        [
+          "Location",
+          "nvarchar(100)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastAccessDate",
+          "datetime"
+        ]
+      ]
+    ],
+    "component": "01"
+  },
+  "Stackish_CreateQuestion": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Title",
+        "type": "nvarchar(max)",
+        "default": null
+      },
+      {
+        "name": "@Body",
+        "type": "nvarchar(max)",
+        "default": null
+      },
+      {
+        "name": "@Tags",
+        "type": "nvarchar(max)",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "02"
+  },
+  "Stackish_EditQuestion": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@EditorUserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Title",
+        "type": "nvarchar(max)",
+        "default": null
+      },
+      {
+        "name": "@Body",
+        "type": "nvarchar(max)",
+        "default": null
+      },
+      {
+        "name": "@EditSummary",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "02"
+  },
+  "Stackish_RetagQuestion": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@EditorUserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Tags",
+        "type": "nvarchar(max)",
+        "default": null
+      },
+      {
+        "name": "@EditSummary",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "02"
+  },
+  "Stackish_RecordQuestionView": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "02"
+  },
+  "Stackish_CreateAnswer": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Body",
+        "type": "nvarchar(max)",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "03"
+  },
+  "Stackish_EditAnswer": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@AnswerId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@EditorUserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Body",
+        "type": "nvarchar(max)",
+        "default": null
+      },
+      {
+        "name": "@EditSummary",
+        "type": "nvarchar(max)",
+        "default": "NULL"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "03"
+  },
+  "Stackish_SetAcceptedAnswer": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@AnswerId",
+        "type": "int",
+        "default": "NULL"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "03"
+  },
+  "Stackish_AddComment": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@PostId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Text",
+        "type": "nvarchar(max)",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "04"
+  },
+  "Stackish_EditComment": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@CommentId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Text",
+        "type": "nvarchar(max)",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "04"
+  },
+  "Stackish_DeleteComment": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@CommentId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "04"
+  },
+  "Stackish_GetPostComments": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@PostId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "CommentId",
+          "int"
+        ],
+        [
+          "PostId",
+          "int"
+        ],
+        [
+          "Text",
+          "nvarchar(700)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "DisplayName",
+          "nvarchar(40)"
+        ]
+      ]
+    ],
+    "component": "04"
+  },
+  "Stackish_UpvoteQuestion": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "05"
+  },
+  "Stackish_DownvoteQuestion": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "05"
+  },
+  "Stackish_UpvoteAnswer": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@AnswerId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "05"
+  },
+  "Stackish_DownvoteAnswer": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@AnswerId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "05"
+  },
+  "Stackish_RemovePostVote": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@PostId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "05"
+  },
+  "Stackish_GetPostVoteSummary": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@PostId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "PostId",
+          "int"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "RecordedUpVotes",
+          "bigint"
+        ],
+        [
+          "RecordedDownVotes",
+          "bigint"
+        ]
+      ]
+    ],
+    "component": "05"
+  },
+  "Stackish_ListQuestions": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@Sort",
+        "type": "varchar(20)",
+        "default": "'newest'"
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Title",
+          "nvarchar(250)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "ViewCount",
+          "int"
+        ],
+        [
+          "AnswerCount",
+          "int"
+        ],
+        [
+          "CommentCount",
+          "int"
+        ],
+        [
+          "Tags",
+          "nvarchar(150)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "ClosedDate",
+          "datetime"
+        ],
+        [
+          "AcceptedAnswerId",
+          "int"
+        ],
+        [
+          "OwnerUserId",
+          "int"
+        ],
+        [
+          "OwnerDisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "OwnerReputation",
+          "int"
+        ]
+      ]
+    ],
+    "component": "06"
+  },
+  "Stackish_SearchQuestions": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@Text",
+        "type": "nvarchar(200)",
+        "default": "NULL"
+      },
+      {
+        "name": "@TagName",
+        "type": "nvarchar(150)",
+        "default": "NULL"
+      },
+      {
+        "name": "@OwnerUserId",
+        "type": "int",
+        "default": "NULL"
+      },
+      {
+        "name": "@MinScore",
+        "type": "int",
+        "default": "NULL"
+      },
+      {
+        "name": "@HasAccepted",
+        "type": "bit",
+        "default": "NULL"
+      },
+      {
+        "name": "@FromDate",
+        "type": "datetime",
+        "default": "NULL"
+      },
+      {
+        "name": "@ToDate",
+        "type": "datetime",
+        "default": "NULL"
+      },
+      {
+        "name": "@SearchBody",
+        "type": "bit",
+        "default": "0"
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Title",
+          "nvarchar(250)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "ViewCount",
+          "int"
+        ],
+        [
+          "AnswerCount",
+          "int"
+        ],
+        [
+          "CommentCount",
+          "int"
+        ],
+        [
+          "Tags",
+          "nvarchar(150)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "ClosedDate",
+          "datetime"
+        ],
+        [
+          "AcceptedAnswerId",
+          "int"
+        ],
+        [
+          "OwnerUserId",
+          "int"
+        ],
+        [
+          "OwnerDisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "OwnerReputation",
+          "int"
+        ]
+      ]
+    ],
+    "component": "06"
+  },
+  "Stackish_GetQuestionsByTag": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@TagName",
+        "type": "nvarchar(150)",
+        "default": null
+      },
+      {
+        "name": "@Sort",
+        "type": "varchar(20)",
+        "default": "'active'"
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Title",
+          "nvarchar(250)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "ViewCount",
+          "int"
+        ],
+        [
+          "AnswerCount",
+          "int"
+        ],
+        [
+          "CommentCount",
+          "int"
+        ],
+        [
+          "Tags",
+          "nvarchar(150)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "ClosedDate",
+          "datetime"
+        ],
+        [
+          "AcceptedAnswerId",
+          "int"
+        ],
+        [
+          "OwnerUserId",
+          "int"
+        ],
+        [
+          "OwnerDisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "OwnerReputation",
+          "int"
+        ]
+      ]
+    ],
+    "component": "06"
+  },
+  "Stackish_GetUnansweredQuestions": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@TagName",
+        "type": "nvarchar(150)",
+        "default": "NULL"
+      },
+      {
+        "name": "@Mode",
+        "type": "varchar(20)",
+        "default": "'no_answers'"
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Title",
+          "nvarchar(250)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "ViewCount",
+          "int"
+        ],
+        [
+          "AnswerCount",
+          "int"
+        ],
+        [
+          "CommentCount",
+          "int"
+        ],
+        [
+          "Tags",
+          "nvarchar(150)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "ClosedDate",
+          "datetime"
+        ],
+        [
+          "AcceptedAnswerId",
+          "int"
+        ],
+        [
+          "OwnerUserId",
+          "int"
+        ],
+        [
+          "OwnerDisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "OwnerReputation",
+          "int"
+        ]
+      ]
+    ],
+    "component": "06"
+  },
+  "Stackish_GetRelatedQuestions": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Title",
+          "nvarchar(250)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "ViewCount",
+          "int"
+        ],
+        [
+          "AnswerCount",
+          "int"
+        ],
+        [
+          "CommentCount",
+          "int"
+        ],
+        [
+          "Tags",
+          "nvarchar(150)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "ClosedDate",
+          "datetime"
+        ],
+        [
+          "AcceptedAnswerId",
+          "int"
+        ],
+        [
+          "OwnerUserId",
+          "int"
+        ],
+        [
+          "OwnerDisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "OwnerReputation",
+          "int"
+        ]
+      ]
+    ],
+    "component": "06"
+  },
+  "Stackish_ListTags": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@NamePrefix",
+        "type": "nvarchar(150)",
+        "default": "NULL"
+      },
+      {
+        "name": "@Sort",
+        "type": "varchar(20)",
+        "default": "'popular'"
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "TagId",
+          "int"
+        ],
+        [
+          "TagName",
+          "nvarchar(150)"
+        ],
+        [
+          "QuestionCount",
+          "int"
+        ],
+        [
+          "Excerpt",
+          "nvarchar(max)"
+        ]
+      ]
+    ],
+    "component": "07"
+  },
+  "Stackish_GetTagDetail": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@TagName",
+        "type": "nvarchar(150)",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "TagId",
+          "int"
+        ],
+        [
+          "TagName",
+          "nvarchar(150)"
+        ],
+        [
+          "QuestionCount",
+          "int"
+        ],
+        [
+          "Excerpt",
+          "nvarchar(max)"
+        ],
+        [
+          "WikiBody",
+          "nvarchar(max)"
+        ]
+      ]
+    ],
+    "component": "07"
+  },
+  "Stackish_GetTagTopUsers": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@TagName",
+        "type": "nvarchar(150)",
+        "default": null
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "DisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "AnswerCount",
+          "bigint"
+        ],
+        [
+          "TotalScore",
+          "bigint"
+        ]
+      ]
+    ],
+    "component": "07"
+  },
+  "Stackish_GetQuestionPage": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@AnswerSort",
+        "type": "varchar(20)",
+        "default": "'score'"
+      },
+      {
+        "name": "@AnswerOffset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@AnswerPageSize",
+        "type": "int",
+        "default": "30"
+      },
+      {
+        "name": "@CommentLimit",
+        "type": "int",
+        "default": "10"
+      }
+    ],
+    "results": [
+      [
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Title",
+          "nvarchar(250)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "ViewCount",
+          "int"
+        ],
+        [
+          "AnswerCount",
+          "int"
+        ],
+        [
+          "CommentCount",
+          "int"
+        ],
+        [
+          "Tags",
+          "nvarchar(150)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "ClosedDate",
+          "datetime"
+        ],
+        [
+          "AcceptedAnswerId",
+          "int"
+        ],
+        [
+          "OwnerUserId",
+          "int"
+        ],
+        [
+          "OwnerDisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "OwnerReputation",
+          "int"
+        ],
+        [
+          "Body",
+          "nvarchar(max)"
+        ],
+        [
+          "FavoriteCount",
+          "int"
+        ],
+        [
+          "LastEditDate",
+          "datetime"
+        ],
+        [
+          "LastEditorUserId",
+          "int"
+        ]
+      ],
+      [
+        [
+          "AnswerId",
+          "int"
+        ],
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Body",
+          "nvarchar(max)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "CommentCount",
+          "int"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "LastEditDate",
+          "datetime"
+        ],
+        [
+          "OwnerUserId",
+          "int"
+        ],
+        [
+          "OwnerDisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "OwnerReputation",
+          "int"
+        ],
+        [
+          "IsAccepted",
+          "bit"
+        ]
+      ],
+      [
+        [
+          "CommentId",
+          "int"
+        ],
+        [
+          "PostId",
+          "int"
+        ],
+        [
+          "Text",
+          "nvarchar(700)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "DisplayName",
+          "nvarchar(40)"
+        ]
+      ],
+      [
+        [
+          "LinkId",
+          "int"
+        ],
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "RelatedQuestionId",
+          "int"
+        ],
+        [
+          "LinkTypeId",
+          "int"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "TargetTitle",
+          "nvarchar(250)"
+        ]
+      ],
+      [
+        [
+          "TagName",
+          "nvarchar(150)"
+        ]
+      ]
+    ],
+    "component": "08"
+  },
+  "Stackish_GetUserProfile": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@TopCount",
+        "type": "int",
+        "default": "10"
+      }
+    ],
+    "results": [
+      [
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "DisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "Reputation",
+          "int"
+        ],
+        [
+          "Location",
+          "nvarchar(100)"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastAccessDate",
+          "datetime"
+        ],
+        [
+          "AboutMe",
+          "nvarchar(max)"
+        ],
+        [
+          "WebsiteUrl",
+          "nvarchar(200)"
+        ],
+        [
+          "Age",
+          "int"
+        ],
+        [
+          "Views",
+          "int"
+        ],
+        [
+          "UpVotes",
+          "int"
+        ],
+        [
+          "DownVotes",
+          "int"
+        ]
+      ],
+      [
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "QuestionCount",
+          "bigint"
+        ],
+        [
+          "AnswerCount",
+          "bigint"
+        ],
+        [
+          "CommentCount",
+          "bigint"
+        ],
+        [
+          "BadgeCount",
+          "bigint"
+        ]
+      ],
+      [
+        [
+          "PostId",
+          "int"
+        ],
+        [
+          "PostTypeId",
+          "int"
+        ],
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Title",
+          "nvarchar(250)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "IsAccepted",
+          "bit"
+        ]
+      ],
+      [
+        [
+          "TagName",
+          "nvarchar(150)"
+        ],
+        [
+          "PostCount",
+          "bigint"
+        ],
+        [
+          "TotalScore",
+          "bigint"
+        ]
+      ],
+      [
+        [
+          "Name",
+          "nvarchar(40)"
+        ],
+        [
+          "AwardCount",
+          "bigint"
+        ],
+        [
+          "MostRecentAward",
+          "datetime"
+        ]
+      ]
+    ],
+    "component": "08"
+  },
+  "Stackish_GetUserPosts": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@PostTypeId",
+        "type": "int",
+        "default": "NULL"
+      },
+      {
+        "name": "@Sort",
+        "type": "varchar(20)",
+        "default": "'score'"
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "PostId",
+          "int"
+        ],
+        [
+          "PostTypeId",
+          "int"
+        ],
+        [
+          "QuestionId",
+          "int"
+        ],
+        [
+          "Title",
+          "nvarchar(250)"
+        ],
+        [
+          "Score",
+          "int"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "LastActivityDate",
+          "datetime"
+        ],
+        [
+          "IsAccepted",
+          "bit"
+        ]
+      ]
+    ],
+    "component": "08"
+  },
+  "Stackish_GetPostHistory": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@PostId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Id",
+          "int"
+        ],
+        [
+          "PostHistoryTypeId",
+          "int"
+        ],
+        [
+          "RevisionGUID",
+          "uniqueidentifier"
+        ],
+        [
+          "CreationDate",
+          "datetime"
+        ],
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "UserDisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "Comment",
+          "nvarchar(max)"
+        ],
+        [
+          "Text",
+          "nvarchar(max)"
+        ]
+      ]
+    ],
+    "component": "08"
+  },
+  "Stackish_CloseQuestion": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Reason",
+        "type": "nvarchar(max)",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "09"
+  },
+  "Stackish_ReopenQuestion": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "09"
+  },
+  "Stackish_AddQuestionLink": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@QuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@RelatedQuestionId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@LinkTypeId",
+        "type": "int",
+        "default": "1"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "09"
+  },
+  "Stackish_RemoveQuestionLink": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@LinkId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "Outcome",
+          "varchar(20)"
+        ],
+        [
+          "EntityId",
+          "int"
+        ]
+      ]
+    ],
+    "component": "09"
+  },
+  "Stackish_GetUserBadges": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@UserId",
+        "type": "int",
+        "default": null
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "BadgeId",
+          "int"
+        ],
+        [
+          "Name",
+          "nvarchar(40)"
+        ],
+        [
+          "AwardedDate",
+          "datetime"
+        ]
+      ]
+    ],
+    "component": "10"
+  },
+  "Stackish_ListBadges": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@NamePrefix",
+        "type": "nvarchar(40)",
+        "default": "NULL"
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "Name",
+          "nvarchar(40)"
+        ],
+        [
+          "AwardCount",
+          "bigint"
+        ],
+        [
+          "RecipientCount",
+          "bigint"
+        ],
+        [
+          "FirstAwarded",
+          "datetime"
+        ]
+      ]
+    ],
+    "component": "10"
+  },
+  "Stackish_GetBadgeRecipients": {
+    "kind": "P",
+    "parameters": [
+      {
+        "name": "@BadgeName",
+        "type": "nvarchar(40)",
+        "default": null
+      },
+      {
+        "name": "@Offset",
+        "type": "int",
+        "default": "0"
+      },
+      {
+        "name": "@PageSize",
+        "type": "int",
+        "default": "30"
+      }
+    ],
+    "results": [
+      [
+        [
+          "BadgeId",
+          "int"
+        ],
+        [
+          "UserId",
+          "int"
+        ],
+        [
+          "DisplayName",
+          "nvarchar(40)"
+        ],
+        [
+          "AwardedDate",
+          "datetime"
+        ]
+      ]
+    ],
+    "component": "10"
+  },
+  "Stackish_SplitTags": {
+    "kind": "IF",
+    "parameters": [
+      {
+        "name": "@Tags",
+        "type": "nvarchar(150)",
+        "default": null
+      }
+    ],
+    "results": [
+      [
+        [
+          "TagName",
+          "nvarchar(150)"
+        ]
+      ]
+    ],
+    "component": "07"
+  }
+}

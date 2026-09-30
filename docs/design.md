@@ -1,6 +1,6 @@
 # Stackish design assessment
 
-Assessment recorded September 29, 2026 using read-only inspection. Step 1 (tags and parsing) and step 2 (users) have since been implemented for review; see the [tags](components/07-tags-implementation.md) and [users](components/01-users-implementation.md) notes. The remaining components and complete workload are still planned.
+Assessment recorded September 29, 2026. All ten components are now implemented and included in the integration deployment. See [installation](installation.md), [workload packaging](../workload/README.md), and [actual validation results](integration-validation.md). The original inventory reconciles exactly: 42 procedures plus one function, with no unexplained omissions or additions.
 
 ## Purpose and boundaries
 
@@ -50,9 +50,9 @@ The website provides inspiration rather than a specification to reproduce exactl
 
 Page procedures return SQL result sets, not HTML. Stored body text is treated as opaque content; no Markdown renderer or HTML sanitizer is needed for this workload.
 
-## Planned scope
+## Implemented scope
 
-Ten component assignments contain 42 procedures and one inline table-valued function, 43 objects total. There is no quota to fill with views or extra helpers. Proposed objects and exact interfaces are in the [component briefs](components/README.md); shared behavior is in [contracts](contracts.md).
+Ten component assignments contain 42 procedures and one inline table-valued function, 43 objects total. There is no quota to fill with views or extra helpers. Public objects and exact interfaces are in the [component briefs](components/README.md); shared behavior is in [contracts](contracts.md).
 
 | Assignment | Objects | Responsibility |
 |---|---:|---|

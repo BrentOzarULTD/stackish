@@ -48,6 +48,12 @@ BEGIN
  IF @TagName IS NULL OR LEN(REPLACE(REPLACE(REPLACE(@TagName,N' ',N''),NCHAR(9),N''),NCHAR(13),N''))=0 THROW 50621,'TagName is required.',1;
  IF @Sort IS NULL OR @Sort NOT IN ('active','newest','score') THROW 50622,'Sort must be active, newest, or score.',1;
  IF @Offset IS NULL OR @Offset<0 OR @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 50623,'Invalid paging.',1;
+ IF NOT EXISTS(SELECT 1 FROM dbo.Tags WHERE TagName=@TagName)
+ BEGIN
+ SELECT TOP(0) p.Id QuestionId,p.Title,p.Score,p.ViewCount,p.AnswerCount,p.CommentCount,p.Tags,p.CreationDate,p.LastActivityDate,p.ClosedDate,CASE WHEN a.Id IS NOT NULL THEN p.AcceptedAnswerId END AcceptedAnswerId,NULLIF(p.OwnerUserId,0) OwnerUserId,u.DisplayName OwnerDisplayName,u.Reputation OwnerReputation
+ FROM dbo.Posts p LEFT JOIN dbo.Users u ON u.Id=p.OwnerUserId LEFT JOIN dbo.Posts a ON a.Id=p.AcceptedAnswerId AND a.PostTypeId=2 AND a.ParentId=p.Id WHERE 1=0;
+ RETURN;
+ END;
  SELECT p.Id QuestionId,p.Title,p.Score,p.ViewCount,p.AnswerCount,p.CommentCount,p.Tags,p.CreationDate,p.LastActivityDate,p.ClosedDate,CASE WHEN a.Id IS NOT NULL THEN p.AcceptedAnswerId END AcceptedAnswerId,NULLIF(p.OwnerUserId,0) OwnerUserId,u.DisplayName OwnerDisplayName,u.Reputation OwnerReputation
  FROM dbo.Posts p LEFT JOIN dbo.Users u ON u.Id=p.OwnerUserId LEFT JOIN dbo.Posts a ON a.Id=p.AcceptedAnswerId AND a.PostTypeId=2 AND a.ParentId=p.Id
  WHERE p.PostTypeId=1 AND CHARINDEX(N'<'+@TagName+N'>',COALESCE(p.Tags,N''))>0

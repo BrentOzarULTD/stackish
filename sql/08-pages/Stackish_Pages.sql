@@ -39,7 +39,7 @@ BEGIN
  END;
  SELECT Id AS UserId,DisplayName,Reputation,Location,CreationDate,LastAccessDate,AboutMe,WebsiteUrl,Age,Views,UpVotes,DownVotes FROM dbo.Users WHERE Id=@UserId;
  SELECT u.Id AS UserId,CONVERT(bigint,(SELECT COUNT_BIG(*) FROM dbo.Posts p WHERE p.OwnerUserId=u.Id AND p.PostTypeId=1)) AS QuestionCount,CONVERT(bigint,(SELECT COUNT_BIG(*) FROM dbo.Posts p WHERE p.OwnerUserId=u.Id AND p.PostTypeId=2)) AS AnswerCount,CONVERT(bigint,(SELECT COUNT_BIG(*) FROM dbo.Comments c WHERE c.UserId=u.Id)) AS CommentCount,CONVERT(bigint,(SELECT COUNT_BIG(*) FROM dbo.Badges b WHERE b.UserId=u.Id)) AS BadgeCount FROM dbo.Users u WHERE u.Id=@UserId;
- SELECT TOP(@TopCount) p.Id AS PostId, p.PostTypeId,CASE WHEN p.PostTypeId=1 THEN p.Id ELSE p.ParentId END AS QuestionId,q.Title,p.Score,p.CreationDate,p.LastActivityDate,CONVERT(bit,CASE WHEN p.PostTypeId=2 AND q.AcceptedAnswerId=p.Id THEN 1 ELSE 0 END) AS IsAccepted FROM dbo.Posts p LEFT JOIN dbo.Posts q ON q.Id=CASE WHEN p.PostTypeId=1 THEN p.Id ELSE p.ParentId END WHERE p.OwnerUserId=@UserId AND p.PostTypeId IN(1,2) ORDER BY p.Score DESC,p.Id DESC;
+ SELECT TOP(@TopCount) p.Id AS PostId, p.PostTypeId,CASE WHEN p.PostTypeId=1 THEN p.Id ELSE p.ParentId END AS QuestionId,q.Title,p.Score,p.CreationDate,p.LastActivityDate,CONVERT(bit,CASE WHEN p.PostTypeId=2 AND q.AcceptedAnswerId=p.Id THEN 1 ELSE 0 END) AS IsAccepted FROM dbo.Posts p LEFT JOIN dbo.Posts q ON q.Id=CASE WHEN p.PostTypeId=1 THEN p.Id ELSE p.ParentId END AND q.PostTypeId=1 WHERE p.OwnerUserId=@UserId AND p.PostTypeId IN(1,2) ORDER BY p.Score DESC,p.Id DESC;
  ;WITH Owned AS (SELECT p.Id,p.Score,p.Tags FROM dbo.Posts p WHERE p.OwnerUserId=@UserId AND p.PostTypeId=1 UNION ALL SELECT p.Id,p.Score,q.Tags FROM dbo.Posts p JOIN dbo.Posts q ON q.Id=p.ParentId AND q.PostTypeId=1 WHERE p.OwnerUserId=@UserId AND p.PostTypeId=2), T AS (SELECT s.TagName,o.Id,o.Score FROM Owned o CROSS APPLY dbo.Stackish_SplitTags(o.Tags) s) SELECT TOP(@TopCount) TagName,COUNT_BIG(DISTINCT Id) AS PostCount,SUM(CONVERT(bigint,Score)) AS TotalScore FROM T GROUP BY TagName ORDER BY SUM(CONVERT(bigint,Score)) DESC,TagName;
  SELECT TOP(@TopCount) Name,COUNT_BIG(*) AS AwardCount,MAX(Date) AS MostRecentAward FROM dbo.Badges WHERE UserId=@UserId GROUP BY Name ORDER BY COUNT_BIG(*) DESC,Name;
 END;
@@ -48,13 +48,13 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_GetUserPosts @UserId int,@PostTypeId int=
 AS
 BEGIN
  SET NOCOUNT ON; IF @PostTypeId IS NOT NULL AND @PostTypeId NOT IN(1,2) THROW 50821,'PostTypeId must be 1 or 2.',1; IF @Sort IS NULL OR @Sort NOT IN('score','newest') OR @Offset IS NULL OR @Offset<0 OR @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 50822,'Invalid post paging.',1;
- SELECT p.Id AS PostId,p.PostTypeId,CASE WHEN p.PostTypeId=1 THEN p.Id ELSE p.ParentId END AS QuestionId,q.Title,p.Score,p.CreationDate,p.LastActivityDate,CONVERT(bit,CASE WHEN p.PostTypeId=2 AND q.AcceptedAnswerId=p.Id THEN 1 ELSE 0 END) AS IsAccepted FROM dbo.Posts p LEFT JOIN dbo.Posts q ON q.Id=CASE WHEN p.PostTypeId=1 THEN p.Id ELSE p.ParentId END WHERE p.OwnerUserId=@UserId AND p.PostTypeId IN(1,2) AND (@PostTypeId IS NULL OR p.PostTypeId=@PostTypeId) ORDER BY CASE WHEN @Sort='score' THEN p.Score END DESC,CASE WHEN @Sort='newest' THEN p.CreationDate END DESC,p.Id DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+ SELECT p.Id AS PostId,p.PostTypeId,CASE WHEN p.PostTypeId=1 THEN p.Id ELSE p.ParentId END AS QuestionId,q.Title,p.Score,p.CreationDate,p.LastActivityDate,CONVERT(bit,CASE WHEN p.PostTypeId=2 AND q.AcceptedAnswerId=p.Id THEN 1 ELSE 0 END) AS IsAccepted FROM dbo.Posts p LEFT JOIN dbo.Posts q ON q.Id=CASE WHEN p.PostTypeId=1 THEN p.Id ELSE p.ParentId END AND q.PostTypeId=1 WHERE p.OwnerUserId=@UserId AND EXISTS(SELECT 1 FROM dbo.Users u WHERE u.Id=@UserId) AND p.PostTypeId IN(1,2) AND (@PostTypeId IS NULL OR p.PostTypeId=@PostTypeId) ORDER BY CASE WHEN @Sort='score' THEN p.Score END DESC,CASE WHEN @Sort='newest' THEN p.CreationDate END DESC,p.Id DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 END;
 GO
 CREATE OR ALTER PROCEDURE dbo.Stackish_GetPostHistory @PostId int,@Offset int=0,@PageSize int=30
 AS
 BEGIN
  SET NOCOUNT ON; IF @Offset IS NULL OR @Offset<0 OR @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 50831,'Invalid history paging.',1;
- SELECT h.Id,h.PostHistoryTypeId,h.RevisionGUID,h.CreationDate,h.UserId,h.UserDisplayName,h.Comment,h.Text FROM dbo.PostHistory h WHERE h.PostId=@PostId AND EXISTS(SELECT 1 FROM dbo.Posts p WHERE p.Id=@PostId) ORDER BY h.CreationDate DESC,h.Id DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+ SELECT h.Id,h.PostHistoryTypeId,h.RevisionGUID,h.CreationDate,NULLIF(h.UserId,0) AS UserId,h.UserDisplayName,h.Comment,h.Text FROM dbo.PostHistory h WHERE h.PostId=@PostId AND EXISTS(SELECT 1 FROM dbo.Posts p WHERE p.Id=@PostId) ORDER BY h.CreationDate DESC,h.Id DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 END;
 GO

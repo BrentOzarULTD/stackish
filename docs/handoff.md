@@ -1,5 +1,7 @@
 # Giving an assignment to another LLM
 
+Integration status: all ten assignments are present on main as of September 30, 2026; no component PRs were open at integration start. The original inventory is exactly 43 objects (42 procedures and one inline TVF). Use [the complete deployment](../sql/deploy.sql), [installation guide](installation.md), and [validation evidence](integration-validation.md). The assignment text below remains historical contributor guidance.
+
 Start each session with this repository and exactly one component brief. The schema capture is sufficient for authoring; do not pass around the research credentials in prompts committed to Git. Supply access separately if and when you authorize testing.
 
 Copy the following prompt and replace the assignment placeholder:
@@ -75,6 +77,8 @@ Deployment order is simpler than the recommended development sequence: verify SQ
 - Concurrency harnesses that just launch N sqlcmd processes rarely overlap inside a microsecond check-then-insert window; the 05/09 harnesses passed against builds with the lock removed until a gate session was added that X-locks a row the workers touch, holds it briefly, and releases them together. Verify a race test fails against a deliberately unlocked local build before trusting it, then redeploy the real procedure.
 - macOS `seq` prints large integers in `%g` notation (`9.8872e+06`); use a bash arithmetic loop for ID ranges.
 - Parallel sessions share the research `StackOverflow` database and redeploy their own components, and other sessions' objects have disappeared mid-session. Redeploy every component a test depends on immediately before running it, and don't record deployment state in docs.
+
+Integration additionally observed imported `Comments.PostId` values attaching old comments to newly allocated answer IDs. A page preview can correctly return an old imported comment before a freshly created fixture comment. Compare preview contents/order with starting rows; never delete imported comments merely to make a fixture empty.
 
 ## Integration ownership
 
