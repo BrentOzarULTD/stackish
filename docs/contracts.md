@@ -61,7 +61,7 @@ SetAcceptedAnswer requires the question's existing owner as actor. `@AnswerId = 
 
 Any positive existing user can close/reopen a question. Close sets ClosedDate only if open; reopen clears it only if closed. Both bump LastActivityDate and append history atomically; repeated requests are NoChange. No special moderator user table, privileges or vote counts.
 
-PostLinks supports directed question-to-question links with type 1 or 3. No self-link. Duplicate triple (PostId, RelatedPostId, LinkTypeId) is NoChange. Reverse-direction links are distinct. A duplicate link does not close the question, and reopening does not remove links. Link removal affects exactly one LinkId. Links have no actor column; validate the supplied actor but do not store it elsewhere. No cycle detection or canonical duplicate-chain resolution in version 1.
+PostLinks supports directed question-to-question links with type 1 or 3. No self-link. Duplicate triple (PostId, RelatedPostId, LinkTypeId) is NoChange. Reverse-direction links are distinct. A duplicate link does not close the question, and reopening does not remove links. Link removal affects exactly one LinkId. AddQuestionLink returns the missing ID as EntityId for NotFound and `@QuestionId` for Conflict (self-link, non-question endpoint, invalid actor); a LinkTypeId other than 1 or 3 is a bad allowlist argument and throws. Links have no actor column; validate the supplied actor but do not store it elsewhere. No cycle detection or canonical duplicate-chain resolution in version 1.
 
 ## Concurrent writes and freedom of implementation
 

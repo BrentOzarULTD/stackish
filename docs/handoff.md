@@ -67,6 +67,15 @@ Deployment order is simpler than the recommended development sequence: verify SQ
 - A procedure that rolls back in its CATCH block rolls back the active transaction it owns at that moment. This implementation does not use savepoints, so callers should not expect an outer transaction to survive unexpected errors from the component 02-04 mutators.
 - The shared research server may default logins to a smaller restore such as `StackOverflow2010`; explicitly target the intended disposable database before deployment/testing and verify required tables such as `PostHistory`.
 
+## Lessons from steps 6, 7 and 9
+
+- The dump contains orphan rows that point above the current identity values: on the 2018-06 copy, Votes.PostId and PostLinks.PostId run past MAX(Posts.Id), and Votes.UserId and Badges.UserId run past MAX(Users.Id). New posts and users can therefore start life with imported votes, links or badges already attached. That is consistent with the contracts (such a vote is treated as the actor's), but tests that assume a fresh ID has no related rows will fail. Rolled-back tests can delete colliding rows inside their transaction; committed concurrency fixtures should compare against a baseline and clean up only by the IDs they created.
+- Vote duplicate checks look up Votes by (PostId, UserId). The research server has a custom `IX_PostId_UserId` index, so a vote is about 30 logical reads there. Confirm on the 2024-04 restore which Votes indexes exist; without one leading on PostId or UserId, every vote call scans Votes. Report it rather than adding an index.
+- Components 05 and 09 serialize on the target post (or source question) row with UPDLOCK instead of an applock. That row is what CreateAnswer already locks for closure checks, so close and answer creation serialize without changing component 03.
+- Concurrency harnesses that just launch N sqlcmd processes rarely overlap inside a microsecond check-then-insert window; the 05/09 harnesses passed against builds with the lock removed until a gate session was added that X-locks a row the workers touch, holds it briefly, and releases them together. Verify a race test fails against a deliberately unlocked local build before trusting it, then redeploy the real procedure.
+- macOS `seq` prints large integers in `%g` notation (`9.8872e+06`); use a bash arithmetic loop for ID ranges.
+- Parallel sessions share the research `StackOverflow` database and redeploy their own components, and other sessions' objects have disappeared mid-session. Redeploy every component a test depends on immediately before running it, and don't record deployment state in docs.
+
 ## Integration ownership
 
 The integration session owns the deployment manifest, object-count check, final schema preflight, SQLQueryStress packaging and cross-component verification. Deployment creates the parser first, then all procedures; there are no required inter-procedure dependencies. Integration can fix correctness and contract disagreements, but must preserve the diversity of implementation styles.
