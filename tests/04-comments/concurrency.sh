@@ -12,6 +12,17 @@ if [[ -z "${SQLCMDPASSWORD:-}" ]]; then
   exit 2
 fi
 
+wait_for_jobs() {
+  local status=0
+  local pid
+  for pid in "$@"; do
+    if ! wait "$pid"; then
+      status=1
+    fi
+  done
+  return "$status"
+}
+
 root="stkc$RANDOM"
 setup="$($sqlcmd_bin -S "$server" -d "$database" -U "$user" -C -b -h -1 -W -s "," -Q "
 SET NOCOUNT ON;
@@ -34,10 +45,12 @@ DELETE FROM dbo.Users WHERE Id = $actor;" >/dev/null || true
 }
 trap cleanup EXIT
 
+pids=()
 for i in $(seq 1 "$parallel_calls"); do
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_AddComment $post, $actor, N'$root comment $i';" >/dev/null &
+  pids+=("$!")
 done
-wait
+wait_for_jobs "${pids[@]}"
 
 "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "
 DECLARE @stored int = (SELECT CommentCount FROM dbo.Posts WHERE Id = $post);
@@ -56,10 +69,12 @@ PRINT 'Component 04 concurrent comment check passed.';
 
 comment="$($sqlcmd_bin -S "$server" -d "$database" -U "$user" -C -b -h -1 -W -Q "SET NOCOUNT ON; SELECT TOP (1) Id FROM dbo.Comments WHERE PostId = $post ORDER BY Id;")"
 
+pids=()
 for _ in $(seq 1 "$parallel_calls"); do
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_DeleteComment $comment, $actor;" >/dev/null &
+  pids+=("$!")
 done
-wait
+wait_for_jobs "${pids[@]}"
 
 "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "
 DECLARE @stored int = (SELECT CommentCount FROM dbo.Posts WHERE Id = $post);

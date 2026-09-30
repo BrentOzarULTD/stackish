@@ -48,7 +48,7 @@ BEGIN
         RETURN;
     END;
 
-    DECLARE @normalized nvarchar(150);
+    DECLARE @normalized nvarchar(max);
     SELECT @normalized = STRING_AGG(CONVERT(nvarchar(max), N'<' + t.TagName + N'>'), N'') WITHIN GROUP (ORDER BY t.TagName)
     FROM @parsed p
     JOIN dbo.Tags t ON t.TagName = p.TagName;
@@ -69,7 +69,7 @@ BEGIN
                           LastEditorUserId, OwnerUserId, ParentId, PostTypeId, Score, Tags, Title, ViewCount)
         VALUES (NULL, 0, @Body, NULL, 0, NULL,
                 @now, 0, @now, NULL, NULL,
-                NULL, @UserId, NULL, 1, 0, @normalized, CONVERT(nvarchar(250), @Title), 0);
+                NULL, @UserId, NULL, 1, 0, CONVERT(nvarchar(150), @normalized), CONVERT(nvarchar(250), @Title), 0);
         SET @postId = CONVERT(int, SCOPE_IDENTITY());
 
         INSERT dbo.PostHistory (PostHistoryTypeId, PostId, RevisionGUID, CreationDate, UserId, UserDisplayName, Comment, Text)

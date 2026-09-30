@@ -50,7 +50,7 @@ BEGIN
         RETURN;
     END;
 
-    DECLARE @normalized nvarchar(150);
+    DECLARE @normalized nvarchar(max);
     SELECT @normalized = STRING_AGG(CONVERT(nvarchar(max), N'<' + t.TagName + N'>'), N'') WITHIN GROUP (ORDER BY t.TagName)
     FROM @new n
     JOIN dbo.Tags t ON t.TagName = n.TagName;
@@ -89,7 +89,7 @@ BEGIN
         END;
 
         UPDATE dbo.Posts
-        SET Tags = @normalized,
+        SET Tags = CONVERT(nvarchar(150), @normalized),
             LastEditDate = @now,
             LastActivityDate = @now,
             LastEditorUserId = @EditorUserId,

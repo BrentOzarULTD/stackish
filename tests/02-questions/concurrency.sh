@@ -12,6 +12,17 @@ if [[ -z "${SQLCMDPASSWORD:-}" ]]; then
   exit 2
 fi
 
+wait_for_jobs() {
+  local status=0
+  local pid
+  for pid in "$@"; do
+    if ! wait "$pid"; then
+      status=1
+    fi
+  done
+  return "$status"
+}
+
 root="stkq$RANDOM"
 setup="$($sqlcmd_bin -S "$server" -d "$database" -U "$user" -C -b -h -1 -W -s "," -Q "
 SET NOCOUNT ON;
@@ -41,10 +52,12 @@ DELETE FROM dbo.Users WHERE Id = $actor;" >/dev/null || true
 }
 trap cleanup EXIT
 
+pids=()
 for _ in $(seq 1 "$parallel_calls"); do
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_RecordQuestionView $question;" >/dev/null &
+  pids+=("$!")
 done
-wait
+wait_for_jobs "${pids[@]}"
 
 "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "
 IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = $question AND ViewCount = $parallel_calls)
@@ -52,11 +65,14 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = $question AND ViewCount = $par
 PRINT 'Component 02 concurrent view check passed.';
 "
 
+pids=()
 for _ in $(seq 1 "$parallel_calls"); do
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_RetagQuestion $retag_one, $actor, N'<$root-b>';" >/dev/null &
+  pids+=("$!")
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_RetagQuestion $retag_two, $actor, N'<$root-a>';" >/dev/null &
+  pids+=("$!")
 done
-wait
+wait_for_jobs "${pids[@]}"
 
 "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "
 IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = $retag_one AND Tags = N'<$root-b>')

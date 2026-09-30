@@ -12,6 +12,17 @@ if [[ -z "${SQLCMDPASSWORD:-}" ]]; then
   exit 2
 fi
 
+wait_for_jobs() {
+  local status=0
+  local pid
+  for pid in "$@"; do
+    if ! wait "$pid"; then
+      status=1
+    fi
+  done
+  return "$status"
+}
+
 root="stka$RANDOM"
 setup="$($sqlcmd_bin -S "$server" -d "$database" -U "$user" -C -b -h -1 -W -s "," -Q "
 SET NOCOUNT ON;
@@ -35,10 +46,12 @@ DELETE FROM dbo.Users WHERE Id IN ($owner, $answerer);" >/dev/null || true
 }
 trap cleanup EXIT
 
+pids=()
 for i in $(seq 1 "$parallel_calls"); do
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_CreateAnswer $question, $answerer, N'$root answer $i';" >/dev/null &
+  pids+=("$!")
 done
-wait
+wait_for_jobs "${pids[@]}"
 
 "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "
 IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = $question AND AnswerCount = $parallel_calls)
@@ -50,12 +63,16 @@ PRINT 'Component 03 concurrent answer check passed.';
 
 answer="$($sqlcmd_bin -S "$server" -d "$database" -U "$user" -C -b -h -1 -W -Q "SET NOCOUNT ON; SELECT TOP (1) Id FROM dbo.Posts WHERE ParentId = $question AND PostTypeId = 2 ORDER BY Id;")"
 
+pids=()
 for i in $(seq 1 "$parallel_calls"); do
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_EditAnswer $answer, $answerer, N'$root edited $i';" >/dev/null &
+  pids+=("$!")
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_SetAcceptedAnswer $question, $owner, $answer;" >/dev/null &
+  pids+=("$!")
   "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_SetAcceptedAnswer $question, $owner, NULL;" >/dev/null &
+  pids+=("$!")
 done
-wait
+wait_for_jobs "${pids[@]}"
 
 "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "
 IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = $answer AND Body LIKE N'$root edited%')
