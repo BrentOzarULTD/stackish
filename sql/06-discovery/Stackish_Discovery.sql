@@ -8,7 +8,7 @@ BEGIN
  SET NOCOUNT ON;
  IF @Offset IS NULL OR @Offset < 0 THROW 50601, 'Offset must be zero or greater.', 1;
  IF @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 50602, 'PageSize must be between 1 and 100.', 1;
- IF @Sort NOT IN ('newest','active','score','views') THROW 50603, 'Sort must be newest, active, score, or views.', 1;
+ IF @Sort IS NULL OR @Sort NOT IN ('newest','active','score','views') THROW 50603, 'Sort must be newest, active, score, or views.', 1;
  SELECT p.Id QuestionId,p.Title,p.Score,p.ViewCount,p.AnswerCount,p.CommentCount,p.Tags,p.CreationDate,p.LastActivityDate,p.ClosedDate,
         CASE WHEN a.Id IS NOT NULL THEN p.AcceptedAnswerId END AcceptedAnswerId, NULLIF(p.OwnerUserId,0) OwnerUserId,u.DisplayName OwnerDisplayName,u.Reputation OwnerReputation
  FROM dbo.Posts p LEFT JOIN dbo.Users u ON u.Id=p.OwnerUserId LEFT JOIN dbo.Posts a ON a.Id=p.AcceptedAnswerId AND a.PostTypeId=2 AND a.ParentId=p.Id
@@ -46,7 +46,7 @@ AS
 BEGIN
  SET NOCOUNT ON;
  IF @TagName IS NULL OR LEN(REPLACE(REPLACE(REPLACE(@TagName,N' ',N''),NCHAR(9),N''),NCHAR(13),N''))=0 THROW 50621,'TagName is required.',1;
- IF @Sort NOT IN ('active','newest','score') THROW 50622,'Sort must be active, newest, or score.',1;
+ IF @Sort IS NULL OR @Sort NOT IN ('active','newest','score') THROW 50622,'Sort must be active, newest, or score.',1;
  IF @Offset IS NULL OR @Offset<0 OR @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 50623,'Invalid paging.',1;
  SELECT p.Id QuestionId,p.Title,p.Score,p.ViewCount,p.AnswerCount,p.CommentCount,p.Tags,p.CreationDate,p.LastActivityDate,p.ClosedDate,CASE WHEN a.Id IS NOT NULL THEN p.AcceptedAnswerId END AcceptedAnswerId,NULLIF(p.OwnerUserId,0) OwnerUserId,u.DisplayName OwnerDisplayName,u.Reputation OwnerReputation
  FROM dbo.Posts p LEFT JOIN dbo.Users u ON u.Id=p.OwnerUserId LEFT JOIN dbo.Posts a ON a.Id=p.AcceptedAnswerId AND a.PostTypeId=2 AND a.ParentId=p.Id
@@ -59,7 +59,7 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_GetUnansweredQuestions @TagName nvarchar(
 AS
 BEGIN
  SET NOCOUNT ON;
- IF @Mode NOT IN ('no_answers','no_solution') THROW 50631,'Mode must be no_answers or no_solution.',1;
+ IF @Mode IS NULL OR @Mode NOT IN ('no_answers','no_solution') THROW 50631,'Mode must be no_answers or no_solution.',1;
  IF @TagName=N'' OR @Offset IS NULL OR @Offset<0 OR @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 50632,'Invalid filter or paging.',1;
  SELECT p.Id QuestionId,p.Title,p.Score,p.ViewCount,p.AnswerCount,p.CommentCount,p.Tags,p.CreationDate,p.LastActivityDate,p.ClosedDate,CASE WHEN a.Id IS NOT NULL THEN p.AcceptedAnswerId END AcceptedAnswerId,NULLIF(p.OwnerUserId,0) OwnerUserId,u.DisplayName OwnerDisplayName,u.Reputation OwnerReputation
  FROM dbo.Posts p LEFT JOIN dbo.Users u ON u.Id=p.OwnerUserId LEFT JOIN dbo.Posts a ON a.Id=p.AcceptedAnswerId AND a.PostTypeId=2 AND a.ParentId=p.Id
@@ -73,7 +73,7 @@ AS
 BEGIN
  SET NOCOUNT ON;
  IF @Offset IS NULL OR @Offset<0 OR @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 50641,'Invalid paging.',1;
- ;WITH Tags AS (SELECT TagName FROM dbo.Stackish_SplitTags((SELECT Tags FROM dbo.Posts WHERE Id=@QuestionId AND PostTypeId=1))), Matches AS (SELECT p.Id,COUNT_BIG(*) SharedCount FROM dbo.Posts p CROSS APPLY dbo.Stackish_SplitTags(p.Tags) t JOIN Tags q ON q.TagName=t.TagName WHERE p.PostTypeId=1 AND p.Id<>@QuestionId GROUP BY p.Id)
+ ;WITH Src AS (SELECT TagName FROM dbo.Stackish_SplitTags((SELECT Tags FROM dbo.Posts WHERE Id=@QuestionId AND PostTypeId=1))), Matches AS (SELECT p.Id,COUNT_BIG(*) SharedCount FROM dbo.Posts p JOIN Src q ON CHARINDEX(N'<'+q.TagName+N'>',COALESCE(p.Tags,N''))>0 WHERE p.PostTypeId=1 AND p.Id<>@QuestionId GROUP BY p.Id)
  SELECT p.Id QuestionId,p.Title,p.Score,p.ViewCount,p.AnswerCount,p.CommentCount,p.Tags,p.CreationDate,p.LastActivityDate,p.ClosedDate,CASE WHEN a.Id IS NOT NULL THEN p.AcceptedAnswerId END AcceptedAnswerId,NULLIF(p.OwnerUserId,0) OwnerUserId,u.DisplayName OwnerDisplayName,u.Reputation OwnerReputation
  FROM Matches m JOIN dbo.Posts p ON p.Id=m.Id LEFT JOIN dbo.Users u ON u.Id=p.OwnerUserId LEFT JOIN dbo.Posts a ON a.Id=p.AcceptedAnswerId AND a.PostTypeId=2 AND a.ParentId=p.Id
  ORDER BY m.SharedCount DESC,p.Score DESC,p.Id DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
