@@ -53,3 +53,24 @@ IF @stored <> @actual
     THROW 51481, 'Concurrent AddComment inserted the wrong number of comments.', 1;
 PRINT 'Component 04 concurrent comment check passed.';
 "
+
+comment="$($sqlcmd_bin -S "$server" -d "$database" -U "$user" -C -b -h -1 -W -Q "SET NOCOUNT ON; SELECT TOP (1) Id FROM dbo.Comments WHERE PostId = $post ORDER BY Id;")"
+
+for _ in $(seq 1 "$parallel_calls"); do
+  "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_DeleteComment $comment, $actor;" >/dev/null &
+done
+wait
+
+"$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "
+DECLARE @stored int = (SELECT CommentCount FROM dbo.Posts WHERE Id = $post);
+DECLARE @actual int = (SELECT COUNT(*) FROM dbo.Comments WHERE PostId = $post);
+IF EXISTS (SELECT 1 FROM dbo.Comments WHERE Id = $comment)
+    THROW 51482, 'Concurrent DeleteComment left the target comment behind.', 1;
+IF @stored <> $((parallel_calls - 1))
+    THROW 51483, 'Concurrent DeleteComment decremented the stored counter more than once or not at all.', 1;
+IF @actual <> $((parallel_calls - 1))
+    THROW 51484, 'Concurrent DeleteComment left the wrong number of comments.', 1;
+IF @stored <> @actual
+    THROW 51485, 'Concurrent DeleteComment left stored and actual comment counts inconsistent.', 1;
+PRINT 'Component 04 concurrent delete check passed.';
+"

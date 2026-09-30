@@ -47,3 +47,22 @@ IF (SELECT COUNT(*) FROM dbo.Posts WHERE ParentId = $question AND PostTypeId = 2
     THROW 51381, 'Concurrent CreateAnswer inserted the wrong number of answers.', 1;
 PRINT 'Component 03 concurrent answer check passed.';
 "
+
+answer="$($sqlcmd_bin -S "$server" -d "$database" -U "$user" -C -b -h -1 -W -Q "SET NOCOUNT ON; SELECT TOP (1) Id FROM dbo.Posts WHERE ParentId = $question AND PostTypeId = 2 ORDER BY Id;")"
+
+for i in $(seq 1 "$parallel_calls"); do
+  "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_EditAnswer $answer, $answerer, N'$root edited $i';" >/dev/null &
+  "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_SetAcceptedAnswer $question, $owner, $answer;" >/dev/null &
+  "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "EXEC dbo.Stackish_SetAcceptedAnswer $question, $owner, NULL;" >/dev/null &
+done
+wait
+
+"$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b -Q "
+IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = $answer AND Body LIKE N'$root edited%')
+    THROW 51382, 'Concurrent EditAnswer did not leave the answer editable.', 1;
+IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = $question AND AnswerCount = $parallel_calls)
+    THROW 51383, 'Concurrent acceptance changed AnswerCount.', 1;
+IF EXISTS (SELECT 1 FROM dbo.Users WHERE Id IN ($owner, $answerer) AND Reputation <> 1)
+    THROW 51384, 'Concurrent acceptance changed reputation.', 1;
+PRINT 'Component 03 concurrent edit/accept check passed.';
+"

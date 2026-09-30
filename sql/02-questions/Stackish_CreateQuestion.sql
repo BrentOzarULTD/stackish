@@ -9,7 +9,6 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_CreateQuestion
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     DECLARE @blank nvarchar(4) = NCHAR(32) + NCHAR(9) + NCHAR(10) + NCHAR(13);
     IF @Title IS NULL OR TRIM(@blank FROM @Title) = N'' THROW 50201, 'Title is required and cannot be blank.', 1;
@@ -19,7 +18,7 @@ BEGIN
     IF DATALENGTH(@Tags) / 2 > 150 THROW 50205, 'Tags cannot exceed 150 characters.', 1;
 
     DECLARE @rawTags TABLE (TagName nvarchar(150) COLLATE database_default NOT NULL, Position int IDENTITY(1,1));
-    DECLARE @p int = 1, @close int, @token nvarchar(150), @len int = LEN(@Tags);
+    DECLARE @p int = 1, @close int, @token nvarchar(150), @len int = DATALENGTH(@Tags) / 2;
     WHILE @p <= @len
     BEGIN
         IF SUBSTRING(@Tags, @p, 1) <> N'<' THROW 50206, 'Tags must be bracket-delimited.', 1;
@@ -61,6 +60,7 @@ BEGIN
         RETURN;
     END;
 
+    SET XACT_ABORT ON;
     DECLARE @now datetime = GETUTCDATE(), @postId int, @rev uniqueidentifier = NEWID();
     BEGIN TRY
         BEGIN TRANSACTION;

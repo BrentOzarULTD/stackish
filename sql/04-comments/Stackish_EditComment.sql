@@ -8,12 +8,12 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_EditComment
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     DECLARE @blank nvarchar(4) = NCHAR(32) + NCHAR(9) + NCHAR(10) + NCHAR(13);
     IF @Text IS NULL OR TRIM(@blank FROM @Text) = N'' THROW 50421, 'Comment text is required and cannot be blank.', 1;
     IF DATALENGTH(@Text) / 2 > 700 THROW 50422, 'Comment text cannot exceed 700 characters.', 1;
 
+    SET XACT_ABORT ON;
     DECLARE @existingUserId int, @oldText nvarchar(700), @found bit = 0;
     BEGIN TRY
         BEGIN TRANSACTION;

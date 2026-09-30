@@ -64,6 +64,7 @@ Deployment order is simpler than the recommended development sequence: verify SQ
 ## Lessons from steps 3-5
 
 - Stored procedures captured with `INSERT ... EXEC` cannot issue `ROLLBACK`, even for an expected NotFound/Conflict branch that changed no data. For expected status returns inside an opened procedure transaction, commit the empty transaction and reserve rollback for actual error paths or changed work.
+- A procedure that rolls back in its CATCH block rolls back the active transaction it owns at that moment. This implementation does not use savepoints, so callers should not expect an outer transaction to survive unexpected errors from the component 02-04 mutators.
 - The shared research server may default logins to a smaller restore such as `StackOverflow2010`; explicitly target the intended disposable database before deployment/testing and verify required tables such as `PostHistory`.
 
 ## Integration ownership

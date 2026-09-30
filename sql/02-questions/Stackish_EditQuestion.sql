@@ -10,7 +10,6 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_EditQuestion
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     DECLARE @blank nvarchar(4) = NCHAR(32) + NCHAR(9) + NCHAR(10) + NCHAR(13);
     IF @Title IS NULL OR TRIM(@blank FROM @Title) = N'' THROW 50221, 'Title is required and cannot be blank.', 1;
@@ -22,6 +21,7 @@ BEGIN
         RETURN;
     END;
 
+    SET XACT_ABORT ON;
     DECLARE @oldTitle nvarchar(250), @oldBody nvarchar(max), @found bit = 0, @changed bit = 0, @now datetime = GETUTCDATE(), @rev uniqueidentifier = NEWID();
     BEGIN TRY
         BEGIN TRANSACTION;

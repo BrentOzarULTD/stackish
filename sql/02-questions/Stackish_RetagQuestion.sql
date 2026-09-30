@@ -9,7 +9,6 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_RetagQuestion
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     DECLARE @blank nvarchar(4) = NCHAR(32) + NCHAR(9) + NCHAR(10) + NCHAR(13);
     IF @Tags IS NULL OR TRIM(@blank FROM @Tags) = N'' THROW 50241, 'At least one tag is required.', 1;
@@ -21,7 +20,7 @@ BEGIN
     END;
 
     DECLARE @rawTags TABLE (TagName nvarchar(150) COLLATE database_default NOT NULL, Position int IDENTITY(1,1));
-    DECLARE @p int = 1, @close int, @token nvarchar(150), @len int = LEN(@Tags);
+    DECLARE @p int = 1, @close int, @token nvarchar(150), @len int = DATALENGTH(@Tags) / 2;
     WHILE @p <= @len
     BEGIN
         IF SUBSTRING(@Tags, @p, 1) <> N'<' THROW 50243, 'Tags must be bracket-delimited.', 1;
@@ -57,6 +56,7 @@ BEGIN
     JOIN dbo.Tags t ON t.TagName = n.TagName;
     IF DATALENGTH(@normalized) / 2 > 150 THROW 50249, 'Normalized tags cannot exceed 150 characters.', 1;
 
+    SET XACT_ABORT ON;
     DECLARE @oldTags nvarchar(150), @found bit = 0, @now datetime = GETUTCDATE(), @rev uniqueidentifier = NEWID(), @lockResult int;
     DECLARE @lockResource nvarchar(255) = CONCAT(N'Stackish_RetagQuestion:', @QuestionId);
     DECLARE @old TABLE (TagName nvarchar(150) COLLATE database_default PRIMARY KEY);
@@ -96,13 +96,18 @@ BEGIN
             LastEditorDisplayName = NULL
         WHERE Id = @QuestionId;
 
-        UPDATE t SET [Count] = CASE WHEN t.[Count] > 0 THEN t.[Count] - 1 ELSE 0 END
+        UPDATE t
+        SET [Count] = CASE WHEN c.Delta > 0 THEN t.[Count] + 1
+                           WHEN t.[Count] > 0 THEN t.[Count] - 1
+                           ELSE 0
+                      END
         FROM dbo.Tags t
-        JOIN (SELECT TagName FROM @old EXCEPT SELECT TagName FROM @new) r ON r.TagName = t.TagName;
-
-        UPDATE t SET [Count] = t.[Count] + 1
-        FROM dbo.Tags t
-        JOIN (SELECT TagName FROM @new EXCEPT SELECT TagName FROM @old) a ON a.TagName = t.TagName;
+        JOIN
+        (
+            SELECT TagName, -1 AS Delta FROM (SELECT TagName FROM @old EXCEPT SELECT TagName FROM @new) r
+            UNION ALL
+            SELECT TagName, 1 AS Delta FROM (SELECT TagName FROM @new EXCEPT SELECT TagName FROM @old) a
+        ) c ON c.TagName = t.TagName;
 
         INSERT dbo.PostHistory (PostHistoryTypeId, PostId, RevisionGUID, CreationDate, UserId, UserDisplayName, Comment, Text)
         VALUES (6, @QuestionId, @rev, @now, @EditorUserId, NULL, @EditSummary, @normalized);

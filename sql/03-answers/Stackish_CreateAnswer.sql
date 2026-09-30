@@ -8,7 +8,6 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_CreateAnswer
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     DECLARE @blank nvarchar(4) = NCHAR(32) + NCHAR(9) + NCHAR(10) + NCHAR(13);
     IF @Body IS NULL OR TRIM(@blank FROM @Body) = N'' THROW 50301, 'Body is required and cannot be blank.', 1;
@@ -18,6 +17,7 @@ BEGIN
         RETURN;
     END;
 
+    SET XACT_ABORT ON;
     DECLARE @now datetime = GETUTCDATE(), @answerId int, @closed datetime, @found bit = 0, @rev uniqueidentifier = NEWID();
     BEGIN TRY
         BEGIN TRANSACTION;

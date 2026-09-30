@@ -8,10 +8,10 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_SetAcceptedAnswer
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     IF @AnswerId = 0 THROW 50341, 'AnswerId zero is not valid; pass NULL to clear acceptance.', 1;
 
+    SET XACT_ABORT ON;
     DECLARE @ownerUserId int, @current int, @found bit = 0, @now datetime = GETUTCDATE(), @lockResult int;
     DECLARE @lockResource nvarchar(255) = CONCAT(N'Stackish_SetAcceptedAnswer:', @QuestionId);
     BEGIN TRY

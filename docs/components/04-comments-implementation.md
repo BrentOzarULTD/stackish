@@ -14,7 +14,7 @@ Comment creation accepts existing questions and answers only, inserts the commen
 Validation authored:
 
 - `tests/04-comments/acceptance.sql` covers question and answer comments, missing/wrong-type targets, author-only editing/deletion, no-op edits, preserving score/creation date, missing comment authors on reads, empty reads for missing posts, repeated deletion, owned orphan deletion, oversized/blank text and invalid paging.
-- `tests/04-comments/concurrency.sh` covers separate-session concurrent comment creation and post comment-count deltas.
+- `tests/04-comments/concurrency.sh` covers separate-session concurrent comment creation, delete races and post comment-count deltas.
 
 Checks run on the authorized disposable `StackOverflow` database:
 
@@ -22,4 +22,4 @@ Checks run on the authorized disposable `StackOverflow` database:
 - `tests/04-comments/acceptance.sql`
 - `tests/04-comments/concurrency.sh` with 20 parallel calls
 
-Remaining integration coverage: concurrent delete races should be exercised in a broader cross-component run.
+Remaining integration coverage: run these same checks on the eventual 2024-04 restore.

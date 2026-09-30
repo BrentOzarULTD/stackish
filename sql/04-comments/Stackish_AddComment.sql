@@ -8,7 +8,6 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_AddComment
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     DECLARE @blank nvarchar(4) = NCHAR(32) + NCHAR(9) + NCHAR(10) + NCHAR(13);
     IF @Text IS NULL OR TRIM(@blank FROM @Text) = N'' THROW 50401, 'Comment text is required and cannot be blank.', 1;
@@ -19,6 +18,7 @@ BEGIN
         RETURN;
     END;
 
+    SET XACT_ABORT ON;
     DECLARE @now datetime = GETUTCDATE(), @commentId int;
     BEGIN TRY
         BEGIN TRANSACTION;

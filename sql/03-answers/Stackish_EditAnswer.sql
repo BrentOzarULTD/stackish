@@ -9,7 +9,6 @@ CREATE OR ALTER PROCEDURE dbo.Stackish_EditAnswer
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON;
 
     DECLARE @blank nvarchar(4) = NCHAR(32) + NCHAR(9) + NCHAR(10) + NCHAR(13);
     IF @Body IS NULL OR TRIM(@blank FROM @Body) = N'' THROW 50321, 'Body is required and cannot be blank.', 1;
@@ -19,9 +18,19 @@ BEGIN
         RETURN;
     END;
 
+    SET XACT_ABORT ON;
     DECLARE @oldBody nvarchar(max), @parentId int, @found bit = 0, @now datetime = GETUTCDATE(), @rev uniqueidentifier = NEWID();
+    SELECT @parentId = ParentId
+    FROM dbo.Posts
+    WHERE Id = @AnswerId AND PostTypeId = 2;
+
     BEGIN TRY
         BEGIN TRANSACTION;
+        IF @parentId IS NOT NULL
+            SELECT @parentId = Id
+            FROM dbo.Posts WITH (UPDLOCK, HOLDLOCK)
+            WHERE Id = @parentId AND PostTypeId = 1;
+
         SELECT @oldBody = Body, @parentId = ParentId, @found = 1
         FROM dbo.Posts WITH (UPDLOCK, HOLDLOCK)
         WHERE Id = @AnswerId AND PostTypeId = 2;

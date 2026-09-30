@@ -19,6 +19,7 @@ BEGIN TRY
     DECLARE @tagsAC nvarchar(max) = N'<' + @tagC + N'><' + @tagA + N'>';
     DECLARE @tagsA nvarchar(max) = N'<' + @tagA + N'>';
     DECLARE @dupTags nvarchar(max) = N'<' + @tagA + N'><' + @tagA + N'>';
+    DECLARE @trailingTags nvarchar(max) = N'<' + @tagA + N'> ';
     DECLARE @missingTag nvarchar(max) = N'<' + @root + N'-missing>';
     DECLARE @nestedTags nvarchar(max) = N'<' + @tagA + N'><bad<nested>';
 
@@ -94,7 +95,7 @@ BEGIN TRY
 
     SELECT @bad = COUNT(*) FROM dbo.Posts;
     DECLARE @i int = 1;
-    WHILE @i <= 6
+    WHILE @i <= 7
     BEGIN
         SET @errno = 0;
         BEGIN TRY
@@ -104,6 +105,7 @@ BEGIN TRY
             IF @i = 4 EXEC dbo.Stackish_CreateQuestion @u, N't', N'b', @dupTags;
             IF @i = 5 EXEC dbo.Stackish_CreateQuestion @u, N't', N'b', @nestedTags;
             IF @i = 6 EXEC dbo.Stackish_CreateQuestion @u, N't', N'b', @longTags;
+            IF @i = 7 EXEC dbo.Stackish_CreateQuestion @u, N't', N'b', @trailingTags;
         END TRY
         BEGIN CATCH
             SET @errno = ERROR_NUMBER();
@@ -112,6 +114,17 @@ BEGIN TRY
         SET @i += 1;
     END;
     IF (SELECT COUNT(*) FROM dbo.Posts) <> @bad THROW 51217, 'Rejected CreateQuestion call inserted data.', 1;
+
+    SET @errno = 0;
+    BEGIN TRY
+        EXEC dbo.Stackish_RetagQuestion @q, @editor, @trailingTags;
+    END TRY
+    BEGIN CATCH
+        SET @errno = ERROR_NUMBER();
+    END CATCH;
+    IF @errno < 50000 THROW 51219, 'RetagQuestion accepted trailing whitespace after the last tag.', 1;
+    IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = @q AND Tags = N'<' + @tagA + N'><' + @tagC + N'>')
+        THROW 51220, 'Rejected trailing-whitespace retag changed the post.', 1;
 
     ROLLBACK TRANSACTION;
 END TRY
