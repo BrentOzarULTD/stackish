@@ -74,7 +74,7 @@ Deployment order is simpler than the recommended development sequence: verify SQ
 - Components 05 and 09 serialize on the target post (or source question) row with UPDLOCK instead of an applock. That row is what CreateAnswer already locks for closure checks, so close and answer creation serialize without changing component 03.
 - Concurrency harnesses that just launch N sqlcmd processes rarely overlap inside a microsecond check-then-insert window; the 05/09 harnesses passed against builds with the lock removed until a gate session was added that X-locks a row the workers touch, holds it briefly, and releases them together. Verify a race test fails against a deliberately unlocked local build before trusting it, then redeploy the real procedure.
 - macOS `seq` prints large integers in `%g` notation (`9.8872e+06`); use a bash arithmetic loop for ID ranges.
-- At the start of this wave the research `StackOverflow` database had no Stackish objects (earlier ones were in `StackOverflow2010`). Components 03, 05, 09 and 10 are now deployed to `StackOverflow`; deploy 07, 01, 02 and 04 there before running their tests.
+- Parallel sessions share the research `StackOverflow` database and redeploy their own components, and other sessions' objects have disappeared mid-session. Redeploy every component a test depends on immediately before running it, and don't record deployment state in docs.
 
 ## Integration ownership
 

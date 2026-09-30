@@ -110,7 +110,9 @@ rm -f "$work/answer".* "$work/closer".*
 pids=()
 gate_start Posts "$q1" 4
 half=$((parallel_calls / 2))
-# Lock waits are granted roughly first-come, so short pauses put the close in the middle of the queue.
+# The pauses usually put the close mid-queue, but lock grant order isn't guaranteed: every
+# answer before the close, or none, are also valid serializations. The invariants below hold
+# for any order.
 for i in $(seq 1 "$parallel_calls"); do
   launch answer "$i" "EXEC dbo.Stackish_CreateAnswer $q1, $actor, N'$root answer $i';"
   if [[ "$i" == "$half" ]]; then
@@ -121,7 +123,7 @@ for i in $(seq 1 "$parallel_calls"); do
 done
 wait_all
 applied="$(count_outcome answer Applied)"; conflicts="$(count_outcome answer Conflict)"
-if [[ "$(count_outcome closer Applied)" != "1" || $((applied + conflicts)) -ne "$parallel_calls" || "$applied" == "$parallel_calls" ]] || grep -q WORKER_FAILED "$work"/answer.*.out "$work"/closer.*.out; then
+if [[ "$(count_outcome closer Applied)" != "1" || $((applied + conflicts)) -ne "$parallel_calls" ]] || grep -q WORKER_FAILED "$work"/answer.*.out "$work"/closer.*.out; then
   echo "close/answer race: closer=$(cat "$work"/closer.1.out) applied=$applied conflicts=$conflicts" >&2
   cat "$work"/answer.*.out | sort | uniq -c >&2
   exit 1

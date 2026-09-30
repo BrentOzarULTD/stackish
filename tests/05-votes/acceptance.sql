@@ -281,6 +281,19 @@ BEGIN TRY
         THROW 51595, 'Duplicate vote rows or scores were changed.', 1;
 
     -------------------------------------------------------------------------------------------
+    -- An imported vote the owner cast on their own post can't be created here, but removing it
+    -- still applies the inverse owner reputation delta like any other removal.
+    DECLARE @ownerRep int = (SELECT Reputation FROM dbo.Users WHERE Id = @owner);
+    INSERT dbo.Votes (PostId, UserId, BountyAmount, VoteTypeId, CreationDate) VALUES (@q, @owner, NULL, 2, '2012-01-01');
+    DELETE @w; INSERT @w EXEC dbo.Stackish_RemovePostVote @q, @owner;
+    IF NOT EXISTS (SELECT 1 FROM @w WHERE Outcome = 'Applied' AND EntityId = @q)
+       OR (SELECT Score FROM dbo.Posts WHERE Id = @q) IS DISTINCT FROM 41
+       OR (SELECT Reputation FROM dbo.Users WHERE Id = @owner) IS DISTINCT FROM @ownerRep - 10
+       OR NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Id = @owner AND UpVotes = 0)
+       OR EXISTS (SELECT 1 FROM dbo.Votes WHERE PostId = @q AND UserId = @owner)
+        THROW 51597, 'Removing an imported self-vote should reverse the owner reputation delta.', 1;
+
+    -------------------------------------------------------------------------------------------
     -- Result shape metadata for the read.
     IF NOT EXISTS (
         SELECT 1

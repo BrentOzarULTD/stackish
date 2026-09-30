@@ -50,9 +50,7 @@ BEGIN
                 UPDATE dbo.Users
                 SET UpVotes = IIF(Id = @UserId AND @voteTypeId = 2, GREATEST(0, UpVotes - 1), UpVotes),
                     DownVotes = IIF(Id = @UserId AND @voteTypeId = 3, GREATEST(0, DownVotes - 1), DownVotes),
-                    Reputation = IIF(Id = @owner AND @owner <> @UserId,
-                                     GREATEST(1, Reputation + IIF(@voteTypeId = 2, -10, 2)),
-                                     Reputation)
+                    Reputation = IIF(Id = @owner, GREATEST(1, Reputation + IIF(@voteTypeId = 2, -10, 2)), Reputation)
                 WHERE Id IN (@UserId, @owner);
 
                 SET @outcome = 'Applied';

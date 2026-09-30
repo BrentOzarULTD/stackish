@@ -18,19 +18,17 @@ sq() { "$sqlcmd_bin" -S "$server" -d "$database" -U "$user" -C -b "$@"; }
 
 work="$(mktemp -d)"
 root="stkv$RANDOM"
-owner="" voter="" question="" voters_first="" voters_last=""
+owner="" voter="" question="" voters=""
 
 cleanup() {
   # Runs on every exit, including failed workers or failed assertions. Workers are waited on
   # before any assertion, so nothing is still writing when this runs.
   # Only rows this run created: fixture IDs, never a name pattern, and never orphan dump rows.
-  local many=""
-  if [[ -n "$voters_first" ]]; then many="OR (Id BETWEEN $voters_first AND $voters_last AND DisplayName LIKE N'$root many %')"; fi
   if [[ -n "$question" ]]; then
     sq -Q "
-DELETE FROM dbo.Votes WHERE PostId = $question AND (UserId IN ($owner, $voter) ${voters_first:+OR UserId BETWEEN $voters_first AND $voters_last});
+DELETE FROM dbo.Votes WHERE PostId = $question AND (UserId IN ($owner, $voter) ${voters:+OR UserId IN ($voters)});
 DELETE FROM dbo.Posts WHERE Id = $question;
-DELETE FROM dbo.Users WHERE Id IN ($owner, $voter) $many;" >/dev/null || echo "cleanup failed for $root" >&2
+DELETE FROM dbo.Users WHERE Id IN ($owner, $voter${voters:+, $voters});" >/dev/null || echo "cleanup failed for $root" >&2
   fi
   rm -rf "$work"
 }
@@ -121,18 +119,22 @@ IF (SELECT Score FROM dbo.Posts WHERE Id = $question) IS DISTINCT FROM 0
 PRINT 'Identical concurrent removals: one Applied, deltas reversed once.';"
 
 # Many different voters at once: no lost score or reputation updates.
-range="$(sq -h -1 -W -s "," -Q "
+# Use exactly the IDs this insert produced; concurrent inserts elsewhere can interleave identity values.
+voters="$(sq -h -1 -W -Q "
 SET NOCOUNT ON;
 DECLARE @now datetime = GETUTCDATE();
+DECLARE @ids TABLE (Id int);
 INSERT dbo.Users (DisplayName, CreationDate, LastAccessDate, Reputation, UpVotes, DownVotes, Views)
+OUTPUT inserted.Id INTO @ids
 SELECT CONCAT(N'$root many ', value), @now, @now, 1, 0, 0, 0 FROM GENERATE_SERIES(1, $parallel_calls);
-SELECT MIN(Id), MAX(Id) FROM dbo.Users WHERE DisplayName LIKE N'$root many %';")"
-IFS="," read -r voters_first voters_last <<< "$range"
-if [[ "$(sq -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.Votes WHERE PostId = $question AND UserId BETWEEN $voters_first AND $voters_last;")" != "0" ]]; then
+SELECT STRING_AGG(CONVERT(varchar(max), Id), ',') FROM @ids;")" || true
+[[ "$voters" =~ ^[0-9]+(,[0-9]+)*$ ]] || { echo "voter setup failed: $voters" >&2; voters=""; exit 1; }
+if [[ "$(sq -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.Votes WHERE PostId = $question AND UserId IN ($voters);")" != "0" ]]; then
   echo "fixture voters collided with orphan votes; rerun" >&2; exit 1
 fi
 pids=()
-for ((id = voters_first; id <= voters_last; id++)); do
+IFS="," read -ra voter_ids <<< "$voters"
+for id in "${voter_ids[@]}"; do
   ( sq -h -1 -W -s "," -Q "SET NOCOUNT ON; EXEC dbo.Stackish_UpvoteQuestion $question, $id;" > "$work/many.$id.out" 2>&1 || echo "WORKER_FAILED" >> "$work/many.$id.out" ) &
   pids+=("$!")
 done
@@ -142,7 +144,7 @@ sq -Q "
 SET NOCOUNT ON;
 IF (SELECT Score FROM dbo.Posts WHERE Id = $question) IS DISTINCT FROM $parallel_calls
    OR (SELECT Reputation FROM dbo.Users WHERE Id = $owner) IS DISTINCT FROM 1 + 10 * $parallel_calls
-   OR (SELECT COUNT(*) FROM dbo.Users WHERE Id BETWEEN $voters_first AND $voters_last AND UpVotes = 1) <> $parallel_calls
+   OR (SELECT COUNT(*) FROM dbo.Users WHERE Id IN ($voters) AND UpVotes = 1) <> $parallel_calls
     THROW 51584, 'Concurrent votes by different users lost updates.', 1;
 PRINT 'Concurrent votes by different users: no lost score/reputation/counter updates.';"
 

@@ -145,8 +145,8 @@ BEGIN TRY
 
     -------------------------------------------------------------------------------------------
     -- Invalid arguments raise >= 50000.
-    DECLARE @i int = 1;
-    WHILE @i <= 9
+    DECLARE @i int = 1, @ws nvarchar(40) = NCHAR(9) + NCHAR(13) + NCHAR(10) + N' ';
+    WHILE @i <= 10
     BEGIN
         SET @errno = 0;
         BEGIN TRY
@@ -159,6 +159,7 @@ BEGIN TRY
             IF @i = 7 EXEC dbo.Stackish_GetBadgeRecipients N'   ';
             IF @i = 8 EXEC dbo.Stackish_GetBadgeRecipients @n1, -5, 30;
             IF @i = 9 EXEC dbo.Stackish_GetBadgeRecipients @n1, 0, 1000;
+            IF @i = 10 EXEC dbo.Stackish_GetBadgeRecipients @ws;
         END TRY
         BEGIN CATCH
             SET @errno = ERROR_NUMBER();

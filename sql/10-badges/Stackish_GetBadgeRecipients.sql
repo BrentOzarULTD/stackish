@@ -9,7 +9,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF @BadgeName IS NULL OR TRIM(@BadgeName) = N'' THROW 50955, 'BadgeName is required and cannot be blank.', 1;
+    IF @BadgeName IS NULL OR TRIM(NCHAR(32) + NCHAR(9) + NCHAR(10) + NCHAR(13) FROM @BadgeName) = N'' THROW 50955, 'BadgeName is required and cannot be blank.', 1;
     IF @Offset IS NULL OR @Offset < 0 THROW 50956, 'Offset must be zero or greater.', 1;
     IF @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 50957, 'PageSize must be between 1 and 100.', 1;
 
