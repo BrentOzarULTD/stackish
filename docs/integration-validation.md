@@ -6,7 +6,7 @@ Started from fetched `main` at `79107be` (the merge of PR #5), on branch `codex/
 
 The original component totals reconcile exactly: 6 + 4 + 3 + 4 + 6 + 5 + 3 + 4 + 4 + 3 = **42 procedures**, plus `Stackish_SplitTags` = **43 objects**. There are no unexplained omissions or additions. `sql/inventory.sql` contains the complete named inventory; `tests/integration/contracts.json` contains the independent signature/result contract for each object.
 
-Delivered: complete SQLCMD deployment/preflight/inventory; exact metadata and multi-result smoke validation; reference/session/pagination checks; bounded contention and rollback validation; 13 paired SQLQueryStress scenarios (12 baseline plus optional comment maintenance); an optional bounded evidence client; and installation, operation, parameter mapping, sampling, mix and reset documentation. Integration added no persistent database helpers, tables, indexes, constraints or settings.
+Delivered: complete SQLCMD deployment/preflight/inventory; exact metadata and multi-result smoke validation; reference/session/pagination checks; bounded contention and rollback validation; one mixed SQLQueryStress batch with one parameter query and one mapping; 13 optional individual scenarios; an optional bounded evidence client; and installation, operation, parameter mapping, sampling, mix and reset documentation. Integration added no persistent database helpers, tables, indexes, constraints or settings.
 
 ## What ran
 
@@ -67,9 +67,24 @@ The unknown-tag guard's final edge call returned empty in approximately one netw
 
 Final parameter-validation durations, including the SchemaOnly check and data fetch: most groups **0.19–0.35 s**, catalog **4.115 s**, expensive-search preparation **1.269 s**. Returned pools were 512 rows for most groups, 8 for hot counters, 128 for expensive reads, and one unused run marker for the two parameter-free groups. These are setup costs, not per-invocation work. Compiling the main batches was performed separately with NOEXEC.
 
+## Single-window packaging follow-up
+
+The default is now [workload/calls.sql](../workload/calls.sql) plus [workload/parameters.sql](../workload/parameters.sql). One SQLQueryStress instance randomly selects the same 55% read / 45% write mix. Its only mapping is `TargetsJson` to `@InputTargets`; related targets are packaged together automatically. All threads share the mix, including expensive operations and eight hot targets. The numbered scenarios remain optional, and the evidence client now defaults to the combined pair. A maintainer-only generator and freshness check keep the standalone SQL consistent with the numbered source scenarios and manifest shares.
+
+Checks actually run for this follow-up:
+
+- The first read-only check found `dbo.Stackish_SplitTags` missing from the shared research database. Repeated the authorized complete deployment twice: all 43 signatures/defaults passed, and checked base metadata remained unchanged. No workload or fixture calls were made.
+- The combined selector passed SchemaOnly/Get Columns compatibility and returned **512 non-NULL JSON payloads**. Each payload was decoded through SQL Server's actual typed projection for all **10 parameterized branches**, preserving every value and tuple; the other two branches need no targets. The hot set contained **eight distinct question/owner pairs**.
+- The combined workload compiled with typed input under **NOEXEC**, without executing its calls. Two successful combined parameter preparation, compilation and JSON round-trip checks took **8.639 and 15.760 seconds** on the research copy (the latter after retaining the source search-text Unicode width); this is not per-call overhead or a load benchmark.
+- Offline routing checks covered every random value 0–99 and matched all 12 manifest shares; named procedure arguments also matched the public contracts. Generated-file freshness, contract inventory, Python compilation and whitespace checks passed.
+
+Content creation now checks whether a cached answer target is still open; if already closed, it adds a comment instead. This avoids accumulating predictable closed-question conflicts when moderation runs in the same window. The procedure still arbitrates a close that races after the check. This changed branch compiled but has **not been executed** as part of the workload.
+
+No SQLQueryStress GUI run, bounded mixed run, new mutation smoke, or throughput measurement was performed in this follow-up. Prior component/smoke results above remain historical evidence; the single-window mix's actual success distribution and GUI execution remain unverified.
+
 ## Remaining release gates
 
-- Review the actual [load batches and parameter mappings](../workload/README.md) before any SQLQueryStress or mixed execution. The proposed finite mix remains 55% read / 45% write invocations, with 3% isolated expensive reads and a 2% hot-counter share. Normal-load outcome frequencies and resource consumption have **not** been measured.
+- Review the actual [single-window batch and mapping](../workload/README.md) before any SQLQueryStress or mixed execution. The proposed random mix remains 55% read / 45% write invocations, with 3% expensive-branch reads and a 2% hot-counter share. Normal-load outcome frequencies and resource consumption have **not** been measured.
 - Validate schema/lookups, all result contracts, mutations, contention, parameter setup, and an approved bounded mixed run on the **2024-04** release dataset. The research copy does not establish release-copy compatibility or performance. Inspect its actual indexes, especially attributed vote lookup support; do not add indexes silently.
 - An operator-authorized restore/reset/redeployment cycle has not run. No restore/drop/replace was authorized or attempted.
 - This wave did not rerun every contributor's standalone acceptance/concurrency file. Those historical results remain in their notes; the integration suites above are the checks actually run here.

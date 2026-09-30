@@ -8,5 +8,7 @@ IF ABS(CONVERT(bigint,CHECKSUM(NEWID()))) % 5=0
  SET @Body=@Body+REPLICATE(CONVERT(nvarchar(max),N'<p>This example describes the inputs, observed output, and the expected result so another reader can reproduce the question.</p>'),128);
 DECLARE @Tags nvarchar(max)=N'<'+@InputTagName+N'>';
 IF @Choice<20 EXEC dbo.Stackish_CreateQuestion @UserId=@InputUserId,@Title=@Text,@Body=@Body,@Tags=@Tags;
-ELSE IF @Choice<60 EXEC dbo.Stackish_CreateAnswer @QuestionId=@InputQuestionId,@UserId=@InputUserId,@Body=@Body;
+-- A cached open question may have closed during the run; commenting is still useful.
+ELSE IF @Choice<60 AND EXISTS(SELECT 1 FROM dbo.Posts WHERE Id=@InputQuestionId AND PostTypeId=1 AND ClosedDate IS NULL)
+ EXEC dbo.Stackish_CreateAnswer @QuestionId=@InputQuestionId,@UserId=@InputUserId,@Body=@Body;
 ELSE EXEC dbo.Stackish_AddComment @PostId=@InputQuestionId,@UserId=@InputUserId,@Text=@Text;

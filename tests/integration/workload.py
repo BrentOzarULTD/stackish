@@ -8,20 +8,64 @@ import json
 import re
 import time
 from collections import Counter
-from common import ROOT, connect, emit, query, scalar
+from datetime import datetime
+from common import CONTRACTS, ROOT, connect, emit, query, scalar
+from package_workload import DEFAULT, SHAPES, build, decode
 
 GROUPS=json.loads((ROOT/'workload/manifest.json').read_text())
 
 
 def static():
     assert sum(g['share'] for g in GROUPS)==100
-    for group in GROUPS:
+    for filename, sql in build().items():
+        assert (ROOT/'workload'/filename).read_text()==sql, 'Run tests/integration/package_workload.py'
+    for group in [DEFAULT]+GROUPS:
         sql=(ROOT/'workload'/group['name']/'calls.sql').read_text()
         inputs=set(re.findall(r'@Input\w+',sql))
         assert inputs=={'@'+name for name in group['mappings']},group['name']
         assert not re.search(r'^\s*GO\s*$',sql,re.M|re.I)
         assert not re.search(r'ORDER BY\s+NEWID',sql,re.I)
-    emit('workload offline mapping checks',groups=len(GROUPS))
+        for name,arguments in re.findall(r'EXEC dbo\.(Stackish_\w+) ([^;]+);',sql):
+            supplied=set(re.findall(r'(@\w+)\s*=',arguments))
+            signature=CONTRACTS[name]['parameters']
+            allowed={p['name'] for p in signature}
+            required={p['name'] for p in signature if p['default'] is None}
+            assert required<=supplied<=allowed,(group['name'],name,supplied)
+    sql=(ROOT/'workload/calls.sql').read_text()
+    routes=[(int(limit),name) for limit,name in re.findall(r'IF @Operation<(\d+) -- \d+%: (\S+)',sql)]
+    counts=Counter(next(name for limit,name in routes if roll<limit) for roll in range(100))
+    assert counts=={g['name']:g['share'] for g in GROUPS if g['share']}, counts
+    emit('workload offline mapping and routing checks',groups=len(GROUPS),default_mappings=DEFAULT['mappings'])
+
+
+def validate_targets(c,values):
+    """Decode every generated target through SQL's actual typed projection, without EXEC."""
+    payloads=[row[0] for row in values]
+    decoded=[json.loads(payload) for payload in payloads]
+    groups=[g for g in GROUPS if g['share'] and g['mappings']]
+    expected_keys={g['name'] for g in groups}
+    assert all(set(row)==expected_keys for row in decoded)
+    sets=[]
+    for group in groups:
+        projection=decode(group).replace('@InputTargets','j.value')
+        cols=','.join('v.['+col+']' for col,_ in SHAPES[group['name'][:2]])
+        sets.append(f'SELECT {cols} FROM OPENJSON(@Payloads) j CROSS APPLY {projection} v ORDER BY CONVERT(int,j.[key]);')
+    actual=query(c,'DECLARE @Payloads nvarchar(max)=%s;\n'+'\n'.join(sets),(json.dumps(decoded),))
+    assert len(actual)==len(groups)
+    for group,(shape,rows) in zip(groups,actual):
+        specification=SHAPES[group['name'][:2]]
+        assert shape==[list(col) for col in specification],(group['name'],shape)
+        expected=[]
+        for payload in decoded:
+            target=payload[group['name']]
+            assert set(target)=={col for col,_ in specification}
+            assert all(value is not None for value in target.values())
+            expected.append(tuple(datetime.fromisoformat(target[col]) if typ=='datetime' else target[col]
+                                  for col,typ in specification))
+        assert rows==expected,(group['name'],'JSON changed a value or tuple')
+    hot={(r['11-hot-counters']['QuestionId'],r['11-hot-counters']['UserId']) for r in decoded}
+    assert 1<=len(hot)<=8
+    emit('single-window target round trip',rows=len(values),branches=len(groups),hot_targets=len(hot),workload_executed=False)
 
 
 def compile_batch(c,group,shape):
@@ -52,6 +96,9 @@ def parameters(c,group):
     assert set(group['mappings'].values())<=set(columns),(group['name'],columns)
     for row in values:
         assert all(row[columns.index(col)] is not None for col in group['mappings'].values()),(group['name'],'NULL parameter')
+    if group==DEFAULT:
+        assert shape==[['TargetsJson','nvarchar(max)']],shape
+        validate_targets(c,values)
     emit('parameter pool',group=group['name'],rows=len(values),milliseconds=round((time.monotonic()-start)*1000,2))
     return [dict(zip(columns,row)) for row in values]
 
@@ -89,14 +136,14 @@ def main():
     parser.add_argument('--compile-only',action='store_true',help='SchemaOnly selectors and NOEXEC calls; no query data or workload execution')
     parser.add_argument('--run',action='store_true',help='Execute mixed workload, including committed mutations')
     parser.add_argument('--allow-mutations',action='store_true')
-    parser.add_argument('--calls',type=int,default=100,help='Total bounded calls, apportioned by documented shares')
+    parser.add_argument('--calls',type=int,default=100,help='Total bounded calls; default uses the single-window random mix')
     parser.add_argument('--threads',type=int,default=4)
     parser.add_argument('--groups',nargs='*',help='Optional exact group names; selected weights are renormalized')
     args=parser.parse_args();static()
     if args.static:return
     if args.run and not args.allow_mutations:parser.error('--run requires --allow-mutations on a disposable database')
     if not 1<=args.calls<=10000 or not 1<=args.threads<=32:parser.error('calls 1..10000; threads 1..32')
-    groups=[g for g in GROUPS if (g['name'] in args.groups if args.groups else g['share']>0)]
+    groups=[g for g in GROUPS if g['name'] in args.groups] if args.groups else [DEFAULT]
     if not groups or (args.groups and set(args.groups)!={g['name'] for g in groups}):parser.error('Unknown/empty group selection')
     pools={}
     with connect() as c:

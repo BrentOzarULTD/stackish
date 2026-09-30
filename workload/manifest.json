@@ -58,7 +58,7 @@
       "InputUserId": "UserId",
       "InputTagName": "TagName"
     },
-    "notes": "Open questions selected at setup may close concurrently; refresh pools between bounded runs. Text varies per invocation."
+    "notes": "If a cached answer target has closed, comment instead; closure after the check can still race. Refresh pools between bounded runs. Text varies per invocation."
   },
   {
     "name": "08-edits",

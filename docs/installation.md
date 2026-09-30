@@ -52,11 +52,11 @@ The contention client commits identifiable fixture users/posts/tags, coordinates
 
 Rollback still consumes identity values. Never reseed to conceal gaps. Imported orphan records can refer to newly allocated IDs; tests abort on incompatible vote/link collisions rather than deleting those imported rows. Cleanup does not reconstruct imported counters. If a client is killed or connectivity is lost during committed fixture tests, inspect the logged exact IDs and marker; cleanup may require manual verification. Do not use broad name-pattern deletes or wipe all rows referencing a newly assigned user ID.
 
-The final command above runs **parameter queries only**, including SchemaOnly/Get Columns compatibility and NOEXEC compilation of the main batches, reporting row counts and preparation durations. Main batches are not executed without `--run`. Use `--compile-only` to check metadata/compilation without fetching parameter data. Empty bounded windows fail validation: rerun to select another window, or choose an appropriate wider local window. Do not start a run with an empty pool. Component acceptance files remain available for more exhaustive individual feature checks; they are separate from this integration suite.
+The final command above runs **parameter queries only**, including SchemaOnly/Get Columns compatibility and NOEXEC compilation of the main batches, reporting row counts and preparation durations. The default checks the combined single-window pair, including every packaged target through its typed JSON projection. Main batches are not executed without `--run`. Optional `--groups` selects numbered scenarios for focused checks. Use `--compile-only` to check metadata/compilation without fetching parameter data. Empty bounded windows fail validation: rerun to select another window, or choose an appropriate wider local window. Do not start a run with an empty pool. Component acceptance files remain available for more exhaustive individual feature checks; they are separate from this integration suite.
 
 ## Start and stop SQLQueryStress
 
-See [workload instructions](../workload/README.md) and [mix](workload.md). Initially run a small finite iteration count. Inspect errors and outcomes before increasing threads. There is no permanent dispatcher or server-side loop. Independent SQLQueryStress instances provide simultaneous operation groups.
+See [workload instructions](../workload/README.md) and [mix](workload.md). Initially run a small finite iteration count. Inspect errors and outcomes before increasing threads. There is no permanent dispatcher or server-side loop. Use one instance with the combined batch and its single parameter mapping; its threads choose operations automatically.
 
 For a separately authorized bounded mixed run, the optional evidence client executes the same packaged batches:
 
@@ -66,7 +66,7 @@ For a separately authorized bounded mixed run, the optional evidence client exec
 
 This command commits mutations to selected existing content. It is **not part of deployment or smoke**, and must not be run while the load-test query is awaiting review. It emits each batch's duration, outcomes, row counts, exceptions and a summary. Connection setup is measured separately; these client timings are not SQL Server CPU/reads or SQLQueryStress performance numbers.
 
-To stop, click Cancel in every running SQLQueryStress window and wait for execution/rollback to finish. Let bounded evidence runs drain their current calls. Verify there are no remaining Stackish sessions with active requests or open transactions before resetting. SQLQueryStress exceptions are errors only: `NotFound`, `Conflict` and `NoChange` are successful SQL executions, so an exception count of zero does not prove useful work. Capture outcome distributions with the evidence client alongside SQLQueryStress CPU, elapsed time and reads.
+To stop, click Cancel in the SQLQueryStress window and wait for execution/rollback to finish. Let bounded evidence runs drain their current calls. Verify there are no remaining Stackish sessions with active requests or open transactions before resetting. SQLQueryStress exceptions are errors only: `NotFound`, `Conflict` and `NoChange` are successful SQL executions, so an exception count of zero does not prove useful work. Capture outcome distributions with the evidence client alongside SQLQueryStress CPU, elapsed time and reads.
 
 ## Reset by restoring a backup
 
