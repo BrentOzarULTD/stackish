@@ -8,7 +8,7 @@ Implemented objects (read-only):
 
 `GetUserBadges` returns every award row for a user that exists in `Users`, ordered by Date then Id descending. Awards whose UserId is missing from `Users` exist in the dump; per the brief, a missing user returns empty even if such awards exist.
 
-`ListBadges` groups the award rows by Name: `COUNT_BIG(*)` awards, `COUNT_BIG(DISTINCT UserId)` recipients (dangling user IDs included), `MIN(Date)` first award. The prefix is literal (`%`, `_`, `[` and `\` are escaped; a trailing space counts); NULL or empty means all badges. Names group under the database collation, so case variants would group together. No class, tier or award-rule data exists or is invented.
+`ListBadges` groups the award rows by Name: `COUNT_BIG(*)` awards, distinct UserId recipients (dangling user IDs included; UserId 0 counts as an award but not a recipient, since zero means no user), `MIN(Date)` first award. The prefix is literal (`%`, `_`, `[` and `\` are escaped; a trailing space counts); NULL or empty means all badges. Names group under the database collation, so case variants would group together. No class, tier or award-rule data exists or is invented.
 
 `GetBadgeRecipients` requires a nonblank name and returns one row per award, Date then Id descending, left-joining `Users` so missing recipients stay with NULL DisplayName (UserId 0 would be returned as NULL).
 

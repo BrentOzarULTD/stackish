@@ -178,4 +178,26 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Posts WHERE Id = $q2 AND ClosedDate IS NULL AND
     THROW 51967, 'A failed close left partial changes.', 1;
 PRINT 'Failed close rolled back completely.';"
 
+# 5. A close/reopen that waits behind another writer on the question row must stamp the time it
+#    got the lock, not the time it was called. Hold the row for 3 s; the stamp must land well
+#    after the call started.
+for op in close reopen; do
+  pids=()
+  gate_start Posts "$q2" 3
+  t0="$(scalar "SELECT CONVERT(varchar(23), GETUTCDATE(), 126);")"
+  if [[ "$op" == close ]]; then stmt="EXEC dbo.Stackish_CloseQuestion $q2, $actor, N'$root late';"; else stmt="EXEC dbo.Stackish_ReopenQuestion $q2, $actor;"; fi
+  rm -f "$work/late$op".*
+  launch "late$op" 1 "$stmt"
+  wait_all
+  grep -q "^Applied," "$work/late$op.1.out" || { echo "late $op did not apply:" >&2; cat "$work/late$op.1.out" >&2; exit 1; }
+  sq -Q "
+SET NOCOUNT ON;
+DECLARE @stamp datetime = (SELECT LastActivityDate FROM dbo.Posts WHERE Id = $q2);
+IF DATEDIFF(millisecond, '$t0', @stamp) < 1500
+   OR (SELECT MAX(CreationDate) FROM dbo.PostHistory WHERE Id > $history_base AND PostId = $q2) IS DISTINCT FROM @stamp
+   OR ('$op' = 'close' AND (SELECT ClosedDate FROM dbo.Posts WHERE Id = $q2) IS DISTINCT FROM @stamp)
+    THROW 51968, 'A $op that waited for the row lock stamped the time it was called.', 1;
+PRINT 'A $op that waited for the row lock stamped the time it got the lock.';"
+done
+
 echo "Component 09 concurrency checks passed."

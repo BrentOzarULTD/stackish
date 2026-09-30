@@ -36,13 +36,14 @@ BEGIN TRY
     -- can inherit awards. Clear them for the fixture IDs (rolled back with everything else).
     DELETE dbo.Badges WHERE UserId IN (@u1, @u2, @ghost);
 
-    -- n1: u1 twice on the same timestamp (repeat award + tie), u1 once earlier, u2, and a
-    -- recipient missing from Users. 5 awards, 3 distinct recipients.
+    -- n1: u1 twice on the same timestamp (repeat award + tie), u1 once earlier, u2, a recipient
+    -- missing from Users, and a UserId 0 award (no user). 6 awards, 3 distinct recipients.
     INSERT dbo.Badges (Name, UserId, Date) VALUES (@n1, @u1, @d1);
     INSERT dbo.Badges (Name, UserId, Date) VALUES (@n1, @u1, @d1);
     INSERT dbo.Badges (Name, UserId, Date) VALUES (@n1, @u1, @d2);
     INSERT dbo.Badges (Name, UserId, Date) VALUES (@n1, @u2, @d1);
     INSERT dbo.Badges (Name, UserId, Date) VALUES (@n1, @ghost, @d3);
+    INSERT dbo.Badges (Name, UserId, Date) VALUES (@n1, 0, @d2);
     -- n2 and n3 tie on AwardCount so the Name tie-breaker decides their order.
     INSERT dbo.Badges (Name, UserId, Date) VALUES (@n2, @u1, @d1), (@n2, @u2, @d2), (@n3, @u2, @d2), (@n3, @u2, @d3);
 
@@ -77,7 +78,7 @@ BEGIN TRY
     DELETE @lb; INSERT @lb (Name, AwardCount, RecipientCount, FirstAwarded) EXEC dbo.Stackish_ListBadges N'Stackish Ü';
     IF (SELECT COUNT(*) FROM @lb) <> 1
        OR NOT EXISTS (SELECT 1 FROM @lb WHERE Name = @n1 COLLATE Latin1_General_100_BIN2
-                                         AND AwardCount = 5 AND RecipientCount = 3 AND FirstAwarded = @d2)
+                                         AND AwardCount = 6 AND RecipientCount = 3 AND FirstAwarded = @d2)
         THROW 52020, 'ListBadges aggregate for the Unicode badge is wrong.', 1;
 
     -- Prefix is literal: '_' must not act as a wildcard, and a trailing space is significant.
@@ -98,7 +99,7 @@ BEGIN TRY
     SELECT @got = STRING_AGG(CONVERT(nvarchar(max), CONCAT(Name, N'=', AwardCount, N'/', RecipientCount)), N'|')
                   WITHIN GROUP (ORDER BY seq) FROM @lb;
     SELECT @want = STRING_AGG(CONVERT(nvarchar(max), CONCAT(Name, N'=', c, N'/', r)), N'|') WITHIN GROUP (ORDER BY c DESC, Name ASC)
-    FROM (VALUES (@n1, 5, 3), (@n2, 2, 2), (@n3, 2, 1)) v (Name, c, r);
+    FROM (VALUES (@n1, 6, 3), (@n2, 2, 2), (@n3, 2, 1)) v (Name, c, r);
     IF @got IS NULL OR @got COLLATE Latin1_General_100_BIN2 <> @want
         THROW 52025, 'ListBadges order or counts wrong.', 1;
     DELETE @lb; INSERT @lb (Name, AwardCount, RecipientCount, FirstAwarded) EXEC dbo.Stackish_ListBadges N'Stackish', 1, 1;
@@ -112,7 +113,7 @@ BEGIN TRY
     DELETE @lb; INSERT @lb (Name, AwardCount, RecipientCount, FirstAwarded) EXEC dbo.Stackish_ListBadges NULL, 0, 10;
     IF (SELECT COUNT(*) FROM @lb) <> 10
        OR EXISTS (SELECT 1 FROM (SELECT AwardCount, LAG(AwardCount) OVER (ORDER BY seq) AS prev FROM @lb) x WHERE x.AwardCount > x.prev)
-       OR EXISTS (SELECT 1 FROM @lb WHERE RecipientCount > AwardCount OR RecipientCount < 1)
+       OR EXISTS (SELECT 1 FROM @lb WHERE RecipientCount > AwardCount OR RecipientCount < 0)
         THROW 52028, 'ListBadges(NULL) should return a sorted full page.', 1;
     SELECT @want = STRING_AGG(Name, N'|') WITHIN GROUP (ORDER BY seq) FROM @lb;
     DELETE @lb; INSERT @lb (Name, AwardCount, RecipientCount, FirstAwarded) EXEC dbo.Stackish_ListBadges N'', 0, 10;
@@ -124,20 +125,22 @@ BEGIN TRY
     DELETE @br; INSERT @br (BadgeId, UserId, DisplayName, AwardedDate) EXEC dbo.Stackish_GetBadgeRecipients @n1;
     SELECT @got = STRING_AGG(CONVERT(nvarchar(max), CONCAT(BadgeId, N':', UserId, N':', ISNULL(DisplayName, N'<null>'))), N'|')
                   WITHIN GROUP (ORDER BY seq) FROM @br;
-    SELECT @want = STRING_AGG(CONVERT(nvarchar(max), CONCAT(b.Id, N':', b.UserId, N':', ISNULL(u.DisplayName, N'<null>'))), N'|')
+    SELECT @want = STRING_AGG(CONVERT(nvarchar(max), CONCAT(b.Id, N':', NULLIF(b.UserId, 0), N':', ISNULL(u.DisplayName, N'<null>'))), N'|')
                    WITHIN GROUP (ORDER BY b.Date DESC, b.Id DESC)
-    FROM dbo.Badges b LEFT JOIN dbo.Users u ON u.Id = b.UserId
+    FROM dbo.Badges b LEFT JOIN dbo.Users u ON u.Id = b.UserId AND b.UserId <> 0
     WHERE b.Name = @n1 COLLATE Latin1_General_100_BIN2;
-    IF @got IS NULL OR @got COLLATE Latin1_General_100_BIN2 <> @want OR (SELECT COUNT(*) FROM @br) <> 5
+    IF @got IS NULL OR @got COLLATE Latin1_General_100_BIN2 <> @want OR (SELECT COUNT(*) FROM @br) <> 6
         THROW 52030, 'GetBadgeRecipients rows or order wrong.', 1;
     IF NOT EXISTS (SELECT 1 FROM @br b WHERE b.UserId = @ghost AND b.DisplayName IS NULL AND b.AwardedDate = @d3
                                          AND b.seq = (SELECT MIN(seq) FROM @br))
        OR NOT EXISTS (SELECT 1 FROM @br WHERE UserId = @u1 AND DisplayName = N'Stackish badge user Ω' COLLATE Latin1_General_100_BIN2)
         THROW 52031, 'GetBadgeRecipients lost a missing recipient or a Unicode display name.', 1;
+    IF NOT EXISTS (SELECT 1 FROM @br WHERE UserId IS NULL AND DisplayName IS NULL AND AwardedDate = @d2)
+        THROW 52035, 'GetBadgeRecipients should keep a UserId 0 award with NULL UserId.', 1;
     IF (SELECT COUNT(*) FROM @br WHERE UserId = @u1) <> 3 OR (SELECT COUNT(DISTINCT UserId) FROM @br) <> 3
         THROW 52032, 'GetBadgeRecipients should list repeated awards separately.', 1;
 
-    DELETE @br; INSERT @br (BadgeId, UserId, DisplayName, AwardedDate) EXEC dbo.Stackish_GetBadgeRecipients @n1, 4, 30;
+    DELETE @br; INSERT @br (BadgeId, UserId, DisplayName, AwardedDate) EXEC dbo.Stackish_GetBadgeRecipients @n1, 5, 30;
     IF (SELECT COUNT(*) FROM @br) <> 1 OR NOT EXISTS (SELECT 1 FROM @br WHERE UserId = @u1 AND AwardedDate = @d2)
         THROW 52033, 'GetBadgeRecipients paging wrong.', 1;
     DELETE @br; INSERT @br (BadgeId, UserId, DisplayName, AwardedDate) EXEC dbo.Stackish_GetBadgeRecipients N'Stackish-no-such-badge';

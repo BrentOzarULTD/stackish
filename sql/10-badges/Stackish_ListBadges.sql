@@ -17,10 +17,11 @@ BEGIN
         REPLACE(REPLACE(REPLACE(REPLACE(@NamePrefix, N'\', N'\\'), N'%', N'\%'), N'_', N'\_'), N'[', N'\[') + N'%';
 
     -- Badge names come only from award rows; there is no badge catalog or class metadata.
-    -- Awards to user IDs that no longer exist in Users still count.
+    -- Awards to user IDs that no longer exist in Users still count. UserId 0 means no user, so
+    -- those awards count as awards but not as a recipient.
     SELECT b.Name,
            COUNT_BIG(*) AS AwardCount,
-           COUNT_BIG(DISTINCT b.UserId) AS RecipientCount,
+           COUNT_BIG(DISTINCT b.UserId) - MAX(IIF(b.UserId = 0, 1, 0)) AS RecipientCount,
            MIN(b.Date) AS FirstAwarded
     FROM dbo.Badges b
     WHERE @NamePrefix IS NULL

@@ -7,7 +7,7 @@ Implemented objects:
 - `dbo.Stackish_AddQuestionLink`
 - `dbo.Stackish_RemoveQuestionLink`
 
-Close and reopen update-lock the question row, then check type, actor and current state, then set/clear `ClosedDate`, bump `LastActivityDate` and write one type-10 (Comment = reason) or type-11 (Comment NULL) history row with a new RevisionGUID, all in one transaction. Repeats are `NoChange` with no history. The reason is validated (non-NULL, not only spaces/tabs/CR/LF) before any work and stored whole in `PostHistory.Comment` (nvarchar(max)).
+Close and reopen update-lock the question row, then check type, actor and current state, then set/clear `ClosedDate`, bump `LastActivityDate` and write one type-10 (Comment = reason) or type-11 (Comment NULL) history row with a new RevisionGUID, all in one transaction. Repeats are `NoChange` with no history. The timestamp is taken after the row lock is granted, so a call that waited behind another writer never stamps an older `ClosedDate`/`LastActivityDate` than that writer's. The reason is validated (non-NULL, not only spaces/tabs/CR/LF) before any work and stored whole in `PostHistory.Comment` (nvarchar(max)).
 
 Interaction with component 03: `CreateAnswer` reads `ClosedDate` under `UPDLOCK, HOLDLOCK` on the same question row, so close and answer creation serialize. An answer either commits before the close or returns `Conflict`. No change to `CreateAnswer` was needed.
 

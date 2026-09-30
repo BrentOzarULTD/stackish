@@ -9,7 +9,7 @@ BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
-    DECLARE @now datetime = GETUTCDATE(), @outcome varchar(20), @type int, @closedDate datetime;
+    DECLARE @now datetime, @outcome varchar(20), @type int, @closedDate datetime;
 
     BEGIN TRY
         BEGIN TRANSACTION;
@@ -17,6 +17,10 @@ BEGIN
         SELECT @type = PostTypeId, @closedDate = ClosedDate
         FROM dbo.Posts WITH (UPDLOCK)
         WHERE Id = @QuestionId;
+
+        -- Take the time only once the row lock is held, so a call that waited behind another
+        -- writer never stamps an older ClosedDate/LastActivityDate than that writer's.
+        SET @now = GETUTCDATE();
 
         IF @type IS NULL
             SET @outcome = 'NotFound';
