@@ -1,0 +1,5 @@
+# Page reads implementation
+
+Implemented the four page/read procedures in `sql/08-pages/`. `GetQuestionPage` always emits five result sets, including typed empty sets for a missing or wrong-type question. It pages answers before applying per-post comment limits, preserves dangling authors and linked-question targets, and sorts tags explicitly. `GetUserProfile` computes each aggregate independently to avoid one-to-many multiplication, derives answer tags from parent questions, and returns five sets. History is read directly from stored `PostHistory` rows only.
+
+These procedures do not write counters or access records. `GetUserProfile` and related post/tag/badge summaries can scan large tables on the public dump; no prohibited infrastructure or indexes were added. `tests/08-pages/acceptance.sql` requires a multi-result-set capable client and explicitly exercises missing targets. It was run on the authorized disposable 2018-06 database; a richer client-side assertion harness remains for integration.
