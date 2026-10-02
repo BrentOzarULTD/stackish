@@ -27,6 +27,10 @@ Measurement freezes when Stop is pressed. Calls that finish while draining can s
 
 The app reuses baseline target tuples and a repeatable per-worker operation/variant sequence for compatible runs. This improves comparability without pretending to be a deterministic database benchmark. Concurrent scheduling, cache state, background activity, text GUIDs and state-dependent votes/moderation still differ. Run long enough to include completions from the expensive reads when using the graph to assess tuning; the five-second minimum is a display rule, not a useful benchmark duration. The workload commits changes; it does not undo the first run. Warm/cold cache and changing data must be considered when teaching from the comparison. Clear the baseline after restoring/replacing the database or deliberately changing the target sample. No automated restore, cache flush, or compensating writes are performed.
 
+## Maintainer testing copy
+
+On Brent’s Mac, the latest delivered Apple Silicon app always lives at `/Users/brentozar/Applications/Stackish.app`. Open that same app after each update. The matching archive is `Stackish-latest.zip` in the same folder, and `Stackish-build.txt` records the source commit and verification. App changes must refresh and launch-check this copy before being reported complete. This local copy is separate from public GitHub releases.
+
 ## Build and run
 
 Requires the .NET 10 SDK for development. Packaged builds include the runtime.
