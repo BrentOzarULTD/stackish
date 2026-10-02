@@ -130,15 +130,14 @@ public sealed class RunTests
     }
 
     [Fact]
-    public async Task StopWaitsForInFlightCallsAndStartsNoMore()
+    public async Task StopCancelsInFlightCallsImmediatelyAndStartsNoMore()
     {
         var backend = new BlockingBackend();
         var runner = new WorkloadRunner(backend, Config with { Concurrency = 1 }, ["target"]);
         var task = runner.RunAsync();
         await backend.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         runner.Stop();
-        Assert.False(task.IsCompleted);
-        backend.Release.TrySetResult();
+        Assert.True(backend.ActiveToken.IsCancellationRequested);
         var result = await task.WaitAsync(TimeSpan.FromSeconds(3));
         Assert.Equal(1, backend.Calls);
         Assert.True(result!.Finished);
@@ -147,10 +146,10 @@ public sealed class RunTests
     }
 
     [Fact]
-    public async Task DrainTimeoutCancelsAnActiveCallAndIsNotThroughput()
+    public async Task StopCancellationIsNotThroughput()
     {
         var backend = new BlockingBackend();
-        var runner = new WorkloadRunner(backend, Config with { Concurrency = 1 }, ["target"], TimeSpan.FromMilliseconds(20));
+        var runner = new WorkloadRunner(backend, Config with { Concurrency = 1 }, ["target"]);
         var task = runner.RunAsync();
         await backend.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         runner.Stop();
@@ -207,12 +206,14 @@ public sealed class RunTests
     {
         public readonly TaskCompletionSource Entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public CancellationToken ActiveToken;
         public int Calls;
         public bool Disposed;
         public Task<string[]> PrepareAsync(CancellationToken cancellationToken) => Task.FromResult(new[] { "target" });
         public Task<IWorkloadWorker> OpenWorkerAsync(CancellationToken cancellationToken) => Task.FromResult<IWorkloadWorker>(this);
         public async Task<OperationResult> ExecuteAsync(Operation operation, string targets, CancellationToken token)
         {
+            ActiveToken = token;
             Interlocked.Increment(ref Calls); Entered.TrySetResult();
             await Release.Task.WaitAsync(token);
             return new(true);

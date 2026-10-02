@@ -17,9 +17,10 @@ public sealed class ComparisonChart : Control
     {
         base.Render(context);
         var plot = new Rect(42, 10, Math.Max(1, Bounds.Width - 50), Math.Max(1, Bounds.Height - 36));
-        var current = Current?.Id == Baseline?.Id ? null : Current;
+        var current = Current;
+        var previous = Current?.Id == Baseline?.Id ? null : Baseline;
         double duration = Math.Max(30, Math.Max(Current?.Seconds ?? 0, Baseline?.Seconds ?? 0));
-        var all = (Baseline?.Buckets ?? []).Concat(current?.Buckets ?? []).ToArray();
+        var all = (previous?.Buckets ?? []).Concat(current?.Buckets ?? []).ToArray();
         double peak = Math.Max(1, all.Select(b => b.QueriesPerSecond).DefaultIfEmpty(0).Max());
         double magnitude = Math.Pow(10, Math.Floor(Math.Log10(peak / 3)));
         double max = 3 * Math.Ceiling(peak / 3 / magnitude) * magnitude;
@@ -33,7 +34,7 @@ public sealed class ComparisonChart : Control
             Label(context, MainViewModel.Duration(seconds, duration >= 3600), new(plot.Left + i * plot.Width / 3 - (i == 3 ? (duration >= 3600 ? 48 : 30) : 0), plot.Bottom + 8));
         }
         context.DrawLine(new Pen(Brush.Parse("#CFC9C1")), plot.BottomLeft, plot.BottomRight);
-        DrawSeries(context, Baseline, plot, duration, max, "#6E717A", true);
+        DrawSeries(context, previous, plot, duration, max, "#6E717A", true);
         DrawSeries(context, current, plot, duration, max, "#2F6DB5", false);
         if (all.Length == 0) Label(context, "Start a run to capture your baseline.", new(plot.Left + 14, plot.Top + plot.Height / 2));
     }

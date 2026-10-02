@@ -25,6 +25,11 @@ var baseline = Sample(310, 600, true);
 // failures may escape to the async-void UI handler or change the measured run.
 var clipboardVm = new MainViewModel(new StateStore(Path.Combine(output, "empty-state")));
 clipboardVm.ShowPreview(baseline, Sample(421, 420, true), false, true);
+if (!clipboardVm.HasPreviousRun) throw new InvalidOperationException("Comparison is missing the previous-run legend.");
+var firstVm = new MainViewModel(new StateStore(Path.Combine(output, "empty-state")));
+if (firstVm.HasPreviousRun) throw new InvalidOperationException("First launch must not show a previous run.");
+firstVm.ShowPreview(baseline, baseline, false);
+if (firstVm.HasPreviousRun) throw new InvalidOperationException("The first stopped run is still the current run.");
 var preservedRun = clipboardVm.CurrentRun;
 foreach (Func<string, Task> failure in new Func<string, Task>[]
 {

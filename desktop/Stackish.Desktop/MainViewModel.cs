@@ -84,12 +84,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string ConnectionVersion => "SQL Server " + version;
     public string TestLabel => testing ? "Testing…" : "Test connection";
     public string StartLabel => run == null ? "▶  Start workload" : "▶  Start new run";
+    public bool HasPreviousRun => baseline != null && baseline.Run.Id != run?.Id;
     public string StopLabel => stopping ? "Stopping…" : "■  Stop";
-    public string ActionHint => busy ? (stopping ? "Finishing active calls…" : "Stop, tune in SSMS, then run again") : connected ? "The first stopped run becomes your baseline" : "Connect to a database first";
+    public string ActionHint => busy ? (stopping ? "Canceling active queries…" : "Stop, tune in SSMS, then run again") : connected ? "The first stopped run becomes your baseline" : "Connect to a database first";
     public string Status => deploying ? "Installing Stackish" : testing ? "Connecting" : stopping ? "Stopping" : busy ? run == null ? "Preparing" : "Running" : run?.Failed == true ? "Failed" : run != null ? "Stopped" : connected ? "Ready" : "Not connected";
     public string StatusColor => run?.Failed == true && !busy ? "#B3261E" : stopping ? "#9A5B00" : busy ? "#145C38" : "#1E1F23";
     public string StatusBackground => run?.Failed == true && !busy ? "#FBE9E7" : stopping ? "#FBF0DC" : busy ? "#E7F3EC" : "#F2F0EC";
-    public string StatusDetail => deploying ? deploymentProgress : stopping ? $"No new calls. Finishing {run?.Active ?? 0} active calls; cancel requested after 30 seconds." : busy ? run == null ? "Selecting eligible targets and opening connections…" : $"{(int)concurrency} concurrent operations · {(baseline == null ? "recording first run" : "comparing with your baseline")}" : run?.Failure ?? (run != null ? "Measurement stopped. The summary is preserved until your next run." : connected ? $"{(int)concurrency} concurrent operations · runs until you stop it" : "Enter connection details above, then test the connection.");
+    public string StatusDetail => deploying ? deploymentProgress : stopping ? $"Cancellation sent for {run?.Active ?? 0} active queries. Waiting for SQL Server to acknowledge." : busy ? run == null ? "Selecting eligible targets and opening connections…" : $"{(int)concurrency} concurrent operations · {(baseline == null ? "recording first run" : "comparing with your baseline")}" : run?.Failure ?? (run != null ? "Measurement stopped. The summary is preserved until your next run." : connected ? $"{(int)concurrency} concurrent operations · runs until you stop it" : "Enter connection details above, then test the connection.");
     public string Elapsed => run == null ? "00:00:00" : Duration(run.Seconds, true);
     public string Completed => run?.Completed.ToString("N0") ?? "—";
     public string ReadWriteDetail => run == null ? "" : $"{run.Reads:N0} reads · {run.Writes:N0} writes";

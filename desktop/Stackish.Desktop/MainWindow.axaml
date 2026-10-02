@@ -1,6 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:Stackish.Desktop" x:Class="Stackish.Desktop.MainWindow" x:DataType="local:MainViewModel"
-        Title="Stackish" Width="1280" Height="800" MinWidth="960" MinHeight="640">
+        Icon="/Assets/Stackish.ico" Title="Stackish" Width="1280" Height="800" MinWidth="960" MinHeight="640">
   <Grid RowDefinitions="Auto,*">
     <Border Background="White" BorderBrush="#E4E0DA" BorderThickness="0,0,0,1">
       <StackPanel>
@@ -110,8 +110,8 @@
             </Grid>
             <StackPanel Grid.Row="1" Spacing="6" Margin="0,8,0,4">
               <StackPanel Orientation="Horizontal" Spacing="18">
-                <TextBlock Text="┄┄  Baseline (before)" Foreground="#6E717A" FontSize="13" />
-                <TextBlock Text="━━  Current run (after)" Foreground="#2F6DB5" FontSize="13" />
+                <TextBlock IsVisible="{Binding HasPreviousRun}" Text="┄┄  Previous run" Foreground="#6E717A" FontSize="13" />
+                <TextBlock Text="━━  Current run" Foreground="#2F6DB5" FontSize="13" />
               </StackPanel>
               <TextBlock Text="{Binding ComparisonText}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
             </StackPanel>

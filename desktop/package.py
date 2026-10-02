@@ -35,10 +35,13 @@ if args.runtime.startswith('osx'):
     executable.mkdir(parents=True, exist_ok=True)
     shutil.copytree(publish, executable, dirs_exist_ok=True)
     os.chmod(executable/'Stackish', 0o755)
+    resources = app/'Contents'/'Resources'
+    resources.mkdir(exist_ok=True)
+    shutil.copy2(root/'Stackish.Desktop'/'Assets'/'Stackish.icns', resources/'Stackish.icns')
     with (app/'Contents'/'Info.plist').open('wb') as stream:
         plistlib.dump({'CFBundleName': 'Stackish', 'CFBundleDisplayName': 'Stackish',
                       'CFBundleIdentifier': 'com.brentozar.stackish', 'CFBundleExecutable': 'Stackish',
-                      'CFBundlePackageType': 'APPL', 'CFBundleShortVersionString': '0.1.0',
+                      'CFBundlePackageType': 'APPL', 'CFBundleIconFile': 'Stackish.icns', 'CFBundleShortVersionString': '0.1.0',
                       'CFBundleVersion': '1', 'NSHighResolutionCapable': True}, stream)
     # Sign nested files first, then seal the complete bundle. The .NET apphost's
     # original signature predates Info.plist and does not sign this app bundle.

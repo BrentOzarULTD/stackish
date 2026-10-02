@@ -12,10 +12,9 @@ public interface IWorkloadBackend
 }
 
 public sealed class WorkloadRunner(IWorkloadBackend backend, RunConfiguration configuration,
-    string[]? cachedTargets = null, TimeSpan? drainTimeout = null)
+    string[]? cachedTargets = null)
 {
     private readonly CancellationTokenSource stopStarting = new();
-    private readonly CancellationTokenSource abort = new();
     private readonly object lifecycle = new();
     private RunMeter? meter;
     private bool started, completed;
@@ -28,9 +27,7 @@ public sealed class WorkloadRunner(IWorkloadBackend backend, RunConfiguration co
         {
             if (completed || stopStarting.IsCancellationRequested) return;
             meter?.Stop();
-            abort.CancelAfter(drainTimeout ?? TimeSpan.FromSeconds(30));
-            // Cancel can synchronously complete preparation and dispose abort in finally.
-            // Configure the drain deadline before invoking those callbacks.
+            // The same token stops setup, prevents new calls, and cancels active SQL immediately.
             stopStarting.Cancel();
         }
     }
@@ -65,7 +62,7 @@ public sealed class WorkloadRunner(IWorkloadBackend backend, RunConfiguration co
         finally
         {
             foreach (var worker in workers) await worker.DisposeAsync();
-            lock (lifecycle) { completed = true; abort.Dispose(); }
+            lock (lifecycle) { completed = true; }
             // Retain the stop token source so late UI Stop events are harmless.
         }
     }
@@ -90,13 +87,13 @@ public sealed class WorkloadRunner(IWorkloadBackend backend, RunConfiguration co
                     if (stopStarting.IsCancellationRequested) break;
                     metrics.Enter();
                     entered = true;
-                    execution = worker.ExecuteAsync(operation, targets, abort.Token);
+                    execution = worker.ExecuteAsync(operation, targets, stopStarting.Token);
                 }
                 var result = await execution;
                 metrics.Complete(result);
                 firstFailure = null;
             }
-            catch (Exception) when (abort.IsCancellationRequested) { metrics.Cancel(); }
+            catch (Exception) when (stopStarting.IsCancellationRequested) { metrics.Cancel(); }
             catch (Exception ex)
             {
                 var message = SqlWorkloadBackend.Explain(ex);
