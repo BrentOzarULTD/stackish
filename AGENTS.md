@@ -7,3 +7,5 @@ On Brent's Mac, the fixed testing location is `/Users/brentozar/Applications/Sta
 Keep a matching ZIP at `/Users/brentozar/Applications/Stackish-latest.zip` and build metadata at `/Users/brentozar/Applications/Stackish-build.txt` (source commit, build time, ZIP hash, verification performed). Update these same paths every time; do not make the user search versioned folders or draft releases. Never put credentials in build metadata.
 
 This local testing copy does not replace the separate checks required for public releases or native Windows/Intel Mac validation. Do not claim those platforms were tested on Apple Silicon.
+
+Brent explicitly authorized sending this and future compiled Stackish builds to Apple for notarization on October 2, 2026. Use the existing local signing identity and `Stackish-notary` Keychain profile; never export private keys or credentials.
