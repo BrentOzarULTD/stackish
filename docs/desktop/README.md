@@ -79,7 +79,7 @@ dotnet run --project desktop/Stackish.LiveChecks -c Release -- --allow-mutations
 
 ## Verify the package before distribution
 
-Packaging verifies a fresh extraction of the final ZIP. Mac verification checks executable permissions, architecture, and the entire bundle signature, including nested runtime files. Mac ZIPs use `ditto` to retain the signature metadata needed by managed assemblies.
+Packaging verifies a fresh extraction of the final ZIP. Mac verification checks executable permissions, the architecture of every Mach-O file, and the entire bundle signature, including nested runtime files. The notarized check also requires bundle identifier `com.brentozar.stackish` and the publisher’s Developer ID team `XRDGTMX2X9`; forks using their own certificate must pass `--expected-team THEIR_TEAM_ID`. Mac ZIPs use `ditto` to retain the signature metadata needed by managed assemblies.
 
 Integrity verification alone is not a downloaded-app launch test. Before a Mac build is described as ready for public use, it must be Developer ID-signed and notarized, and the final downloaded archive must pass:
 
@@ -133,4 +133,4 @@ Repeat steps 4–6 with `osx-x64` for Intel. Keep release candidates in a draft 
 - Run a 30-minute continuous workload from the downloaded app, record errors, operation outcomes, durations and successful reads/writes, and verify Stop/drain completes. Keep platform-specific results explicit; engine-only or screenshot tests do not count as GUI validation.
 - Recheck hashes against tested candidates before publishing. Publish only the platforms that pass. If Apple rejects a build or a platform cannot be tested, leave that platform unavailable and report the exact remaining step. Do not remove quarantine, disable Gatekeeper or describe an untested app as ready.
 
-Current gap: Developer ID signing and notarization have not been exercised with a real identity. The existing ad-hoc bundle integrity checks pass, but quarantined Mac launch is rejected. Native Windows and Intel Mac GUI validation also remains outstanding.
+Validation on October 2, 2026: both Mac architectures built from `ff8c649` were Developer ID-signed, accepted by Apple, stapled, and verified after ZIP extraction. Both pass Gatekeeper as Notarized Developer ID. The actual ARM64 candidate downloaded from the draft GitHub release has the same SHA-256 hash as the uploaded ZIP and opens successfully with quarantine explicitly added after the CLI download; this is not a browser-download test. Its readiness check correctly rejected the test database because all 43 Stackish objects were absent. Redeployment and downloaded-app workload validation are in progress. Native Windows and Intel Mac GUI validation remain outstanding; public Mac downloads remain withheld pending the release acceptance checks.
