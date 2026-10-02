@@ -1,0 +1,29 @@
+<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Stackish.Desktop.App" Name="Stackish" RequestedThemeVariant="Light">
+  <Application.Styles>
+    <FluentTheme />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="#F7F5F2" />
+      <Setter Property="Foreground" Value="#1E1F23" />
+      <Setter Property="FontFamily" Value="avares://Stackish/Assets#IBM Plex Sans" />
+      <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="White" /><Setter Property="BorderBrush" Value="#E4E0DA" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="18,14" />
+    </Style>
+    <Style Selector="TextBlock.title"><Setter Property="FontSize" Value="15" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBlock.helper"><Setter Property="Foreground" Value="#5C5F68" /><Setter Property="FontSize" Value="13" /><Setter Property="TextWrapping" Value="Wrap" /></Style>
+    <Style Selector="TextBlock.metric"><Setter Property="FontSize" Value="32" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBlock.label"><Setter Property="FontSize" Value="13" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#3B3D44" /></Style>
+    <Style Selector="Button"><Setter Property="CornerRadius" Value="6" /><Setter Property="Cursor" Value="Hand" /></Style>
+    <Style Selector="Button.primary"><Setter Property="Background" Value="#C8202F" /><Setter Property="Foreground" Value="White" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="FontSize" Value="17" /><Setter Property="Height" Value="52" /><Setter Property="HorizontalContentAlignment" Value="Center" /></Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#F2F0EC" /><Setter Property="Foreground" Value="#8A8D95" /></Style>
+    <Style Selector="TabItem"><Setter Property="FontSize" Value="14" /></Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#A91A27" /></Style>
+    <Style Selector="Button.stop"><Setter Property="Background" Value="#1E1F23" /></Style>
+    <Style Selector="Button.secondary"><Setter Property="Background" Value="White" /><Setter Property="BorderBrush" Value="#CFC9C1" /><Setter Property="BorderThickness" Value="1" /><Setter Property="FontSize" Value="13" /></Style>
+    <Style Selector="TextBox"><Setter Property="CornerRadius" Value="6" /><Setter Property="BorderBrush" Value="#CFC9C1" /><Setter Property="Background" Value="White" /></Style>
+  </Application.Styles>
+</Application>

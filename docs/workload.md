@@ -1,6 +1,6 @@
 # Integrated workload mix
 
-The runnable package is in [workload/](../workload/README.md), with one main batch, one parameter query, and one mapping for a single SQLQueryStress instance. All ten feature components are integrated. The original 43-object plan matches the actual inventory exactly: 42 procedures and one inline tag parser. No dispatcher, ID-pool table, new index or schema migration was added.
+The runnable package is in [workload/](../workload/README.md), with one main batch, one parameter query, and one mapping for a single SQLQueryStress instance. All ten feature components are integrated. The original 43-object plan matches the actual inventory exactly: 42 procedures and one inline tag parser. No dispatcher, ID-pool table or schema migration was added. The desktop/release follow-up adds explicitly authorized [supporting indexes](indexes.md) during deployment.
 
 ## Invocation budget
 
@@ -34,7 +34,7 @@ SQLQueryStress iterations are **per thread**: four threads and 25 iterations mea
 
 All threads share this mix, so long scans can temporarily occupy every thread. This is part of the workload, not a promise of a steady background write rate. The 3% expensive branch is not the only costly branch: global discovery, profiles and catalog reads may also be expensive. Start with a small finite run, inspect costs and outcomes, and increase concurrency only when appropriate. No artificial delays, transaction wrapper, session-policy changes or persistent dispatcher are added.
 
-The research smoke run demonstrates substantial cost differences; see [validation evidence](integration-validation.md). Body/tag membership search, global sorts, related questions and profile/badge aggregation may dominate resources at low invocation frequency. Parameter-query cost is setup work and is recorded separately. This packaging does not add indexes or impose latency targets.
+The research smoke run demonstrates substantial cost differences; see [validation evidence](integration-validation.md). Body/tag membership search, global sorts, related questions and profile/badge aggregation may dominate resources at low invocation frequency. Parameter-query cost is setup work and is recorded separately. Deployment now supplies missing supporting access paths; the workload imposes no latency targets.
 
 ## Keep normal calls useful
 
@@ -48,4 +48,4 @@ Sampling is biased toward bounded regions of ID space and sampled post owners; i
 
 [Installation](installation.md) covers repeatable deployment, exact signatures/result sets, rolled-back workflows, committed/cleaned contention fixtures, and reset by operator-authorized backup restore. The optional evidence client defaults to this same single batch with bounded call counts and reports exceptions, outcomes and durations.
 
-**SQLQueryStress and the mixed workload have not been run in this integration wave while the load-query review is pending.** Read-only parameter validation and targeted correctness races are reported separately. The release 2024-04 copy is not available on the authorized server; research-copy success cannot establish release compatibility or performance. Before release, repeat preflight, installation, smoke/edge checks, contention checks, parameter validation and an approved bounded mixed run on 2024-04, with its actual index inventory. Reset/reinstallation after a restore also remains an operator-authorized release check.
+SQLQueryStress remains unrun. The operator subsequently restored the 2024-04 release copy and authorized live desktop-engine tests and supporting indexes. See [desktop/release validation](desktop/validation.md) for the actual executed checks, outcomes and remaining gaps; historical research results alone do not establish release compatibility.

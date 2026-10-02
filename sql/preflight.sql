@@ -83,12 +83,15 @@ INSERT @Expected VALUES
 (N'Votes',N'CreationDate',N'datetime',8,0,0),
 (N'VoteTypes',N'Id',N'int',4,0,1),
 (N'VoteTypes',N'Name',N'varchar',50,0,0);
+-- The 2024-04 release permits NULL RevisionGUID; Stackish writes explicit GUIDs.
+-- Accept both snapshot definitions without changing the base table.
 IF EXISTS (
  SELECT 1 FROM @Expected e
  LEFT JOIN sys.tables t ON t.name=e.TableName AND t.schema_id=SCHEMA_ID('dbo')
  LEFT JOIN sys.columns c ON c.object_id=t.object_id AND c.name=e.ColumnName
  WHERE c.column_id IS NULL OR TYPE_NAME(c.user_type_id)<>e.TypeName OR c.max_length<>e.MaxLength
- OR c.is_nullable<>e.Nullable OR c.is_identity<>e.IdentityColumn OR c.is_computed=1
+ OR (c.is_nullable<>e.Nullable AND NOT (e.TableName=N'PostHistory' AND e.ColumnName=N'RevisionGUID' AND c.is_nullable=1))
+ OR c.is_identity<>e.IdentityColumn OR c.is_computed=1
 )
 BEGIN
  SELECT e.*, TYPE_NAME(c.user_type_id) ActualType, c.max_length ActualLength,
@@ -96,7 +99,8 @@ BEGIN
  FROM @Expected e LEFT JOIN sys.tables t ON t.name=e.TableName AND t.schema_id=SCHEMA_ID('dbo')
  LEFT JOIN sys.columns c ON c.object_id=t.object_id AND c.name=e.ColumnName
  WHERE c.column_id IS NULL OR TYPE_NAME(c.user_type_id)<>e.TypeName OR c.max_length<>e.MaxLength
- OR c.is_nullable<>e.Nullable OR c.is_identity<>e.IdentityColumn OR c.is_computed=1;
+ OR (c.is_nullable<>e.Nullable AND NOT (e.TableName=N'PostHistory' AND e.ColumnName=N'RevisionGUID' AND c.is_nullable=1))
+ OR c.is_identity<>e.IdentityColumn OR c.is_computed=1;
  THROW 51001, 'Required base schema mismatch; inspect preceding rows. No schema was changed.', 1;
 END;
 IF EXISTS (

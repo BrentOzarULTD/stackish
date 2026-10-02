@@ -1,6 +1,7 @@
 -- SQLCMD mode, run from repository root; select database explicitly with -d.
 :ON ERROR EXIT
 :r sql/preflight.sql
+:r sql/indexes.sql
 :r sql/07-tags/Stackish_SplitTags.sql
 :r sql/01-users/Stackish_CreateUser.sql
 :r sql/01-users/Stackish_GetUserCard.sql

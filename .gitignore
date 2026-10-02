@@ -5,3 +5,9 @@ __pycache__/
 .env
 *.jsonl
 *.sqlstress
+# Desktop build outputs and local app state.
+**/bin/
+**/obj/
+desktop/artifacts/
+*.user
+*.suo

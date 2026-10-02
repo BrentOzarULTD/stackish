@@ -6,7 +6,7 @@ Assessment recorded September 29, 2026. All ten components are now implemented a
 
 Build a recognizable Stack Overflow workload using stored procedures against the existing public SQL Server database. Call it directly from SQLQueryStress; no website, service, authentication system, or teaching material is required. Reads and writes both matter. Existing imported content may be changed, and new content may be created. Restore a backup to reset the experiment.
 
-Preserve the existing schema: no new tables, columns, indexes, constraints, types, or triggers; no database setting changes. New procedures and the explicitly listed function are the intended future deliverables. Use `dbo.Stackish_` names to separate them from imported objects. Do not depend on this research server's extra indexes or report tables.
+Preserve the existing schema: no new tables, columns, constraints, types, or triggers; no database setting changes. The original no-index restriction was explicitly expanded for the desktop/release wave: initial deployment now creates missing [supporting indexes](indexes.md). New procedures and the explicitly listed function are the intended future deliverables. Use `dbo.Stackish_` names to separate them from imported objects. Do not depend on this research server's extra indexes or report tables.
 
 Use ordinary working code with contributor-specific formatting, naming of local variables, query structure, and implementation choices. Do not deliberately add bugs, broken transactions, or artificial delays. Shared behavior and interfaces must agree; internal style does not need to agree. Brent will make teaching modifications separately.
 

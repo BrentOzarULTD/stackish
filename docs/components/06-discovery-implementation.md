@@ -7,3 +7,7 @@ The procedures use explicit question/answer type checks, left joins for optional
 Validation scripts are provided in `tests/06-discovery/acceptance.sql`. They were run on the authorized disposable 2018-06 database after deploying the parser dependency. The checks are SQLCMD smoke calls; the integration suite now verifies exact returned types and ordered columns.
 
 Integration adds a typed-empty early return for unknown catalog tags in GetQuestionsByTag, preserving the documented unknown-tag behavior even when imported post tokens lack a catalog row. The known-tag query is unchanged. See [integration evidence](../integration-validation.md) for live checks and observed scan costs.
+
+## Desktop/release integration follow-up
+
+Exact-tag predicates now also match complete `|tag|` tokens in pipe-delimited imported strings from the 2024-04 copy. All public signatures/result shapes and bracket-delimited write inputs remain unchanged. ListQuestions adds statement recompilation so the selected CASE sort can use initial-deployment newest/active indexes. No broader query rewrite was made. See [current validation](../desktop/validation.md) and the rolled-back release-format regression suite.

@@ -1,6 +1,6 @@
 # Install, validate, operate, reset
 
-Stackish targets SQL Server 2025 (major version 17+) and compatibility level 170+. Use a disposable restored Stack Overflow database. Final release validation targets **2024-04**; the authorized integration run uses the current **2018-06 research `StackOverflow`** database with customized indexes. Those results do not establish release-copy compatibility.
+Stackish targets SQL Server 2025 (major version 17+) and compatibility level 170+. Use a disposable restored Stack Overflow database. Final release validation targets **2024-04**. The operator restored that copy for the desktop wave; see [current validation](desktop/validation.md). Earlier 2018-06 research results are retained separately.
 
 ## Select the database and deploy
 
@@ -19,10 +19,11 @@ Use your connection's appropriate TLS/certificate options. No endpoint, password
 [sql/deploy.sql](../sql/deploy.sql) is the complete entry point. Relative `:r` paths require the repository root as working directory. It:
 
 1. Runs [preflight](../sql/preflight.sql), rejecting system databases, older engines/compatibility, missing or incompatible base columns, missing Id primary keys, extra required columns that prevent inserts, and incorrect required lookup ID/label pairs. Required reference meanings are checked; unused enum rows and extra nullable/defaulted columns are permitted. Lookup and inventory comparisons explicitly use database collation, avoiding catalog/database collation conflicts.
-2. Creates/alters `Stackish_SplitTags` first, then every public procedure. No procedure calls another procedure as a mandatory dependency.
-3. Checks the exact [43-object inventory](../sql/inventory.sql), reporting missing, extra, or wrong-kind `dbo.Stackish_` objects. It never drops extras.
+2. Checks [supporting indexes](indexes.md) and creates missing access paths, reusing suitable existing indexes under any name. Initial builds on the large restore take time, disk and log space and may block callers; deploy before starting a workload.
+3. Creates/alters `Stackish_SplitTags` first, then every public procedure. No procedure calls another procedure as a mandatory dependency.
+4. Checks the exact [43-object inventory](../sql/inventory.sql), reporting missing, extra, or wrong-kind `dbo.Stackish_` objects. It never drops extras.
 
-Deployment is repeatable and does not seed/repair data, change base tables/constraints/indexes, or change database settings. `CREATE OR ALTER` preserves existing module permissions. The per-module ANSI_NULLS/QUOTED_IDENTIFIER settings are module creation settings, not database changes. A deployment failure stops the script; earlier module definitions may already have changed. Resolve the reported problem and rerun the whole entry point. No all-database transaction or schema migration is implied.
+Deployment is repeatable and does not seed/repair data, change base columns/constraints or replace existing indexes, or change database settings. `CREATE OR ALTER` preserves existing module permissions. The per-module ANSI_NULLS/QUOTED_IDENTIFIER settings are module creation settings, not database changes. Missing supporting indexes are the explicitly authorized exception to the original no-index scope. A deployment failure stops the script; earlier indexes or module definitions may already have been installed. Resolve the reported problem and rerun the whole entry point. No all-database transaction or schema migration is implied.
 
 ## Validate before starting load
 
@@ -40,11 +41,14 @@ python3 tests/integration/workload.py --static
 .venv/bin/python tests/integration/validate.py deploy --allow-mutations
 .venv/bin/python tests/integration/validate.py smoke --allow-mutations
 .venv/bin/python tests/integration/edges.py --allow-mutations
+.venv/bin/python tests/integration/release.py --allow-mutations
 .venv/bin/python tests/integration/contention.py --allow-mutations --workers 8
 .venv/bin/python tests/integration/workload.py
 ```
 
-The deployment validation runs the entry point twice, compares base metadata before/after, and checks all public parameters, directions and declaration defaults. Static checks compare source signatures against the contract manifest and ensure the deployment includes each object once, parser first. For an affected-workflow recheck, `smoke --allow-mutations --quick` omits seven explicitly listed expensive global read procedures; it is not a substitute for a full initial or release smoke run. The smoke suite performs a cross-component workflow in one transaction, checks counters against starting values, checks live result shapes including missing pages, and rolls back in `finally`. It deliberately avoids `INSERT ... EXEC` so it can observe all result sets and each procedure's transaction behavior.
+The deployment validation runs the entry point twice, checks base columns/constraints/settings and existing indexes are preserved, allows only named supporting-index additions on the first pass, requires unchanged metadata on the second pass, and checks all public parameters, directions and declaration defaults. Static checks compare source signatures against the contract manifest and ensure the deployment includes each object once, parser first. For an affected-workflow recheck, `smoke --allow-mutations --quick` omits seven explicitly listed expensive global read procedures; it is not a substitute for a full initial or release smoke run. The smoke suite performs a cross-component workflow in one transaction, checks counters against starting values, checks live result shapes including missing pages, and rolls back in `finally`. It deliberately avoids `INSERT ... EXEC` so it can observe all result sets and each procedure's transaction behavior.
+
+The release suite checks both imported tag formats, exact tag membership across discovery/aggregation procedures, retag deltas and structural index reuse under another name, rolling back its fixtures and temporary index rename.
 
 The edge suite changes only owned fixture rows to exercise missing authors, zero references and wrong-type parents, then rolls back. It checks validation errors under inherited XACT_ABORT OFF and ON. Components 02–05 and 09 can roll back a caller's entire transaction on unexpected errors; no test assumes savepoint isolation. Successful routines must leave transaction counts and inherited options unchanged.
 
@@ -72,4 +76,4 @@ To stop, click Cancel in the SQLQueryStress window and wait for execution/rollba
 
 Deployment does not reset content. Stop all callers, allow transactions to finish, and have the operator restore the chosen clean backup into the intended disposable database using normal SQL Server restore procedures. Verify server, database name, backup dataset date and file paths first. Restoring over an existing database, dropping one, or replacing it requires explicit authorization; no reset script performs these actions automatically.
 
-After an authorized restore, verify compatibility without changing it, rerun `sql/deploy.sql`, then smoke/edge checks and parameter validation. Custom indexes on the research server are not installation prerequisites and must not be silently copied into the release restore. Record the actual release index inventory, especially access paths for Votes(PostId/UserId), Comments(PostId), Posts(ParentId/OwnerUserId), and Badges(UserId). Report costly scans rather than adding indexes under this wave's scope.
+After an authorized restore, verify compatibility without changing it, rerun `sql/deploy.sql`, then smoke/edge checks and parameter validation. The entry point recreates missing supporting indexes and reuses suitable existing ones; it does not copy every research index. Record which indexes were created/reused. Tag/body searches and global aggregations can remain costly; deployment does not attempt to eliminate every scan. Clear any desktop baseline after a restore.

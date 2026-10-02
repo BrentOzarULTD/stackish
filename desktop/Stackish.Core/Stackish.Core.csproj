@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <EmbeddedResource Include="../../workload/calls.sql" LogicalName="Workload.calls.sql" />
+    <EmbeddedResource Include="../../workload/parameters.sql" LogicalName="Workload.parameters.sql" />
+    <EmbeddedResource Include="../../sql/preflight.sql" LogicalName="Workload.preflight.sql" />
+    <EmbeddedResource Include="../../sql/inventory.sql" LogicalName="Workload.inventory.sql" />
+  </ItemGroup>
+</Project>

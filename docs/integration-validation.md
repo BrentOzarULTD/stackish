@@ -1,5 +1,7 @@
 # Integration validation — September 30, 2026
 
+Historical report. The subsequent desktop wave received a 2024-04 restore and explicit authorization to install supporting indexes. See [current release validation](desktop/validation.md); the remaining gates below describe the earlier wave, not the latest server state.
+
 Started from fetched `main` at `79107be` (the merge of PR #5), on branch `codex/integration-workload-packaging`. GitHub reported no open PRs at the start; all ten components were available. No contributor PR was merged by this integration session.
 
 ## Inventory and delivered package
