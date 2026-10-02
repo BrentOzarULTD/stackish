@@ -151,15 +151,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private async Task DeployAsync()
     {
         deploying = true; connected = false; message = "";
-        // A partial update also invalidates comparisons with previously tuned modules.
-        baseline = null; run = null; targets = []; Save();
         deploymentProgress = "Checking database…";
         deploymentCancellation = new(); Refresh();
         try
         {
             var progress = new Progress<string>(text => { deploymentProgress = text; Refresh(); });
             var backend = new SqlWorkloadBackend(Settings, password);
-            await backend.DeployAsync(progress, deploymentCancellation.Token);
+            await backend.DeployAsync(progress, deploymentCancellation.Token, beforeModuleChanges: () =>
+            {
+                baseline = null; run = null; targets = []; Save(); Refresh();
+            });
             version = await backend.TestAsync(deploymentCancellation.Token);
             connected = true;
             Save();

@@ -29,19 +29,15 @@ public sealed partial class SqlWorkloadBackend(ConnectionSettings settings, stri
         return connection.ServerVersion;
     }
 
-    public async Task DeployAsync(IProgress<string>? progress = null, CancellationToken token = default)
+    public async Task DeployAsync(IProgress<string>? progress = null, CancellationToken token = default, Action? beforeModuleChanges = null)
     {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync(token);
-        var batches = DatabaseDeployment.Batches().ToArray();
-        for (int i = 0; i < batches.Length; i++)
+        await DatabaseDeployment.ExecuteAsync(async (batch, cancellation) =>
         {
-            var batch = batches[i];
-            progress?.Report(batch.Source == "preflight.sql" ? "Checking database requirements…" :
-                batch.Source == "inventory.sql" ? "Verifying installed objects…" : $"Installing database objects: step {i + 1} of {batches.Length}…");
             await using var command = new SqlCommand(batch.Sql, connection) { CommandTimeout = 60 };
-            await command.ExecuteNonQueryAsync(token);
-        }
+            await command.ExecuteNonQueryAsync(cancellation);
+        }, beforeModuleChanges, progress, token);
     }
 
     public static IEnumerable<string> ReadinessBatches() => new[] { "preflight.sql", "inventory.sql" }

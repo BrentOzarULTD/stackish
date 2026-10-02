@@ -4,6 +4,8 @@ The first desktop version targets Windows and macOS. Use it to generate ongoing 
 
 Mac downloads have been withdrawn after a bundle-signature defect was reproduced in the published ZIP. Build locally for now; the repaired packaging process verifies ZIP extraction but local ad-hoc signing does not establish Gatekeeper acceptance. The Windows preview remains available from [GitHub Releases](https://github.com/BrentOzarULTD/stackish/releases/tag/v0.1.0-preview.1). Extract the whole Windows archive and open `Stackish.exe` inside its folder. Keep the Windows companion files together. The packages include .NET; an SDK is only needed to build from source.
 
+**Version note:** the published Windows Preview 1 lacks Install / update Stackish; deploy modules with `sql/deploy.sql` before connecting. The installer UI below is available in the current source and awaits updated downloads.
+
 ## Run, tune, compare
 
 1. Restore your training database. Enter its connection details in the app and click **Install / update Stackish** for a fresh restore. This replaces Stackish module definitions and clears the saved baseline. Optional indexes are a separate choice in the [installation guide](../installation.md).

@@ -21,6 +21,28 @@ public static class DatabaseDeployment
         }
     }
 
+    public static async Task ExecuteAsync(Func<Batch, CancellationToken, Task> execute,
+        Action? beforeModuleChanges = null, IProgress<string>? progress = null, CancellationToken token = default)
+    {
+        var batches = Batches().ToArray();
+        bool notified = false;
+        for (int i = 0; i < batches.Length; i++)
+        {
+            token.ThrowIfCancellationRequested();
+            var batch = batches[i];
+            progress?.Report(batch.Source == "preflight.sql" ? "Checking database requirements…" :
+                batch.Source == "inventory.sql" ? "Verifying installed objects…" : $"Installing database objects: step {i + 1} of {batches.Length}…");
+            if (!notified && Regex.IsMatch(batch.Sql, @"^\s*CREATE OR ALTER (?:PROCEDURE|FUNCTION)\b", RegexOptions.Multiline | RegexOptions.IgnoreCase))
+            {
+                // Synchronous notification before issuing DDL: preserve prior results
+                // on connection/preflight failures, invalidate them for partial updates.
+                beforeModuleChanges?.Invoke();
+                notified = true;
+            }
+            await execute(batch, token);
+        }
+    }
+
     private static string Read(string path)
     {
         if (path is "preflight.sql" or "inventory.sql") return WorkloadFiles.Read(path);
