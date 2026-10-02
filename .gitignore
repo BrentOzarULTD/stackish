@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+# Local connection settings, evidence and SQLQueryStress saved settings may contain credentials.
+.env
+*.jsonl
+*.sqlstress
+# Desktop build outputs and local app state.
+**/bin/
+**/obj/
+desktop/artifacts/
+*.user
+*.suo

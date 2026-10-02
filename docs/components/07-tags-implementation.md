@@ -60,3 +60,7 @@ SQL Server does not expose T-SQL parameter defaults through `sys.parameters`; se
 ## Limits and review focus
 
 The public schema has no indexed tag-to-question mapping. Existing-tag leaderboards scan question data even for rare tags, and were the slow part of acceptance testing; reserve them for lower-frequency workload calls. No index hint or new base index was added. Temp-table result metadata needs execution-based verification. Test results are from the 2018-06 research copy, not the eventual 2024-04 release restore. Concurrent mixed-write workload testing belongs to later integration; these procedures intentionally offer normal read-committed behavior rather than cross-statement snapshot consistency.
+
+## Desktop/release integration follow-up
+
+The operator-restored 2024-04 copy uses `|tag|other-tag|` in imported Posts.Tags. The parser now recognizes that complete outer-delimiter format as well as bracket fragments. Tag leaderboard membership also accepts both; write validation and canonical new storage remain bracket-delimited. `tests/integration/release.py` verifies exact membership and unchanged/changed retag deltas without repairing imported rows. Supporting deployment indexes are now explicitly authorized; current results are in [desktop/release validation](../desktop/validation.md).

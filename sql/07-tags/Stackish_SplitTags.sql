@@ -14,5 +14,13 @@ RETURN
       AND LEFT(s.value, 1) = N'<'
       AND CHARINDEX(N'<', s.value, 2) = 0
       AND LEN(REPLACE(REPLACE(REPLACE(SUBSTRING(s.value, 2, 150), NCHAR(9), N''), NCHAR(10), N''), NCHAR(13), N'')) > 0
+    UNION
+    -- The 2024-04 download stores imported tags as |token|token|.
+    -- New writes still use the bracket-delimited public contract.
+    SELECT DISTINCT CONVERT(nvarchar(150), s.value) AS TagName
+    FROM STRING_SPLIT(@Tags, N'|') AS s
+    WHERE LEFT(@Tags, 1) = N'|' AND RIGHT(@Tags, 1) = N'|'
+      AND CHARINDEX(N'<', s.value) = 0 AND CHARINDEX(N'>', s.value) = 0
+      AND LEN(REPLACE(REPLACE(REPLACE(s.value, NCHAR(9), N''), NCHAR(10), N''), NCHAR(13), N'')) > 0
 );
 GO

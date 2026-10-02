@@ -1,5 +1,7 @@
 # Giving an assignment to another LLM
 
+Integration status: all ten assignments are present on main as of September 30, 2026; no component PRs were open at integration start. The original inventory is exactly 43 objects (42 procedures and one inline TVF). Use [the complete deployment](../sql/deploy.sql), [installation guide](installation.md), and [validation evidence](integration-validation.md). The assignment text below remains historical contributor guidance.
+
 Start each session with this repository and exactly one component brief. The schema capture is sufficient for authoring; do not pass around the research credentials in prompts committed to Git. Supply access separately if and when you authorize testing.
 
 Copy the following prompt and replace the assignment placeholder:
@@ -10,7 +12,7 @@ Copy the following prompt and replace the assignment placeholder:
 >
 > Preserve the public names, parameters, result shapes, data rules and scope. Write natural SQL in your own style. Do not imitate another component's formatting or refactor other contributors' files. Do not deliberately introduce bugs, teaching traps, waits or broken transactions. Do not build a web app or teaching material.
 >
-> Do not add or alter tables, indexes, columns, constraints, database settings, triggers, or table types. Do not depend on report tables, customized index names, hidden helper objects, or historical rows absent from the dump. New stored procedures and the assigned tag function are the only planned database objects.
+> Original component scope (superseded only for deployment indexes; see the desktop/release follow-up below): do not add or alter tables, indexes, columns, constraints, database settings, triggers, or table types. Do not depend on report tables, customized index names, hidden helper objects, or historical rows absent from the dump. New stored procedures and the assigned tag function are the only planned database objects.
 >
 > This assignment authorizes preparing repository files. Do not connect to or change a database unless this session separately authorizes it. If no test database is authorized, provide runnable checks and clearly state they were not executed. Avoid credentials and hard-coded database names in files. Use CREATE OR ALTER with suitable batch separators, and do not deploy or run workload calls merely by opening an example script.
 >
@@ -70,14 +72,20 @@ Deployment order is simpler than the recommended development sequence: verify SQ
 ## Lessons from steps 6, 7 and 9
 
 - The dump contains orphan rows that point above the current identity values: on the 2018-06 copy, Votes.PostId and PostLinks.PostId run past MAX(Posts.Id), and Votes.UserId and Badges.UserId run past MAX(Users.Id). New posts and users can therefore start life with imported votes, links or badges already attached. That is consistent with the contracts (such a vote is treated as the actor's), but tests that assume a fresh ID has no related rows will fail. Rolled-back tests can delete colliding rows inside their transaction; committed concurrency fixtures should compare against a baseline and clean up only by the IDs they created.
-- Vote duplicate checks look up Votes by (PostId, UserId). The research server has a custom `IX_PostId_UserId` index, so a vote is about 30 logical reads there. Confirm on the 2024-04 restore which Votes indexes exist; without one leading on PostId or UserId, every vote call scans Votes. Report it rather than adding an index.
+- Vote duplicate checks look up Votes by (PostId, UserId). The research server has a custom `IX_PostId_UserId` index, so a vote is about 30 logical reads there. Confirm on the 2024-04 restore which Votes indexes exist; without one leading on PostId or UserId, every vote call scans Votes. The desktop/release deployment now supplies this access path when missing; see [index policy](indexes.md).
 - Components 05 and 09 serialize on the target post (or source question) row with UPDLOCK instead of an applock. That row is what CreateAnswer already locks for closure checks, so close and answer creation serialize without changing component 03.
 - Concurrency harnesses that just launch N sqlcmd processes rarely overlap inside a microsecond check-then-insert window; the 05/09 harnesses passed against builds with the lock removed until a gate session was added that X-locks a row the workers touch, holds it briefly, and releases them together. Verify a race test fails against a deliberately unlocked local build before trusting it, then redeploy the real procedure.
 - macOS `seq` prints large integers in `%g` notation (`9.8872e+06`); use a bash arithmetic loop for ID ranges.
 - Parallel sessions share the research `StackOverflow` database and redeploy their own components, and other sessions' objects have disappeared mid-session. Redeploy every component a test depends on immediately before running it, and don't record deployment state in docs.
 
+Integration additionally observed imported `Comments.PostId` values attaching old comments to newly allocated answer IDs. A page preview can correctly return an old imported comment before a freshly created fixture comment. Compare preview contents/order with starting rows; never delete imported comments merely to make a fixture empty.
+
 ## Integration ownership
 
 The integration session owns the deployment manifest, object-count check, final schema preflight, SQLQueryStress packaging and cross-component verification. Deployment creates the parser first, then all procedures; there are no required inter-procedure dependencies. Integration can fix correctness and contract disagreements, but must preserve the diversity of implementation styles.
 
-Confirm every referenced base table/column/type and required lookup ID exists on the eventual 2024-04 restore. Stop and report a mismatch rather than adding the missing schema. A performance difference from this research server is not by itself a reason to add indexes. Database changes require authorization for the current implementation session; authorization was granted for step-1 deployment and testing on the disposable research server.
+Confirm every referenced base table/column/type and required lookup ID exists on the eventual 2024-04 restore. Stop and report a mismatch rather than adding the missing schema. Supporting indexes are now explicitly authorized during initial deployment; other schema changes remain outside scope. Database changes require authorization for the current implementation session; authorization was granted for step-1 deployment and testing on the disposable research server.
+
+## Desktop/release follow-up
+
+The operator restored 2024-04 and explicitly authorized supporting indexes as part of initial deployment, superseding the earlier no-index restriction for that step. See [index policy](indexes.md) and [current validation](desktop/validation.md). The restore has nullable PostHistory.RevisionGUID and pipe-delimited imported tags; preflight accepts the compatible nullability, and reads/retagging recognize both formats without rewriting imported rows. New write inputs remain bracket-delimited.

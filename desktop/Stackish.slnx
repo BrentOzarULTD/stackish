@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Stackish.Core/Stackish.Core.csproj" />
+  <Project Path="Stackish.LiveChecks/Stackish.LiveChecks.csproj" />
+  <Project Path="Stackish.Desktop/Stackish.Desktop.csproj" />
+  <Project Path="Stackish.Preview/Stackish.Preview.csproj" />
+  <Project Path="Stackish.Tests/Stackish.Tests.csproj" />
+</Solution>

@@ -1,12 +1,12 @@
 # Stackish design assessment
 
-Assessment recorded September 29, 2026 using read-only inspection. Step 1 (tags and parsing) and step 2 (users) have since been implemented for review; see the [tags](components/07-tags-implementation.md) and [users](components/01-users-implementation.md) notes. The remaining components and complete workload are still planned.
+Assessment recorded September 29, 2026. All ten components are now implemented and included in the integration deployment. See [installation](installation.md), [workload packaging](../workload/README.md), and [actual validation results](integration-validation.md). The original inventory reconciles exactly: 42 procedures plus one function, with no unexplained omissions or additions.
 
 ## Purpose and boundaries
 
 Build a recognizable Stack Overflow workload using stored procedures against the existing public SQL Server database. Call it directly from SQLQueryStress; no website, service, authentication system, or teaching material is required. Reads and writes both matter. Existing imported content may be changed, and new content may be created. Restore a backup to reset the experiment.
 
-Preserve the existing schema: no new tables, columns, indexes, constraints, types, or triggers; no database setting changes. New procedures and the explicitly listed function are the intended future deliverables. Use `dbo.Stackish_` names to separate them from imported objects. Do not depend on this research server's extra indexes or report tables.
+Preserve the existing schema: no new tables, columns, constraints, types, or triggers; no database setting changes. The original no-index restriction was explicitly expanded for the desktop/release wave: initial deployment now creates missing [supporting indexes](indexes.md). New procedures and the explicitly listed function are the intended future deliverables. Use `dbo.Stackish_` names to separate them from imported objects. Do not depend on this research server's extra indexes or report tables.
 
 Use ordinary working code with contributor-specific formatting, naming of local variables, query structure, and implementation choices. Do not deliberately add bugs, broken transactions, or artificial delays. Shared behavior and interfaces must agree; internal style does not need to agree. Brent will make teaching modifications separately.
 
@@ -50,9 +50,9 @@ The website provides inspiration rather than a specification to reproduce exactl
 
 Page procedures return SQL result sets, not HTML. Stored body text is treated as opaque content; no Markdown renderer or HTML sanitizer is needed for this workload.
 
-## Planned scope
+## Implemented scope
 
-Ten component assignments contain 42 procedures and one inline table-valued function, 43 objects total. There is no quota to fill with views or extra helpers. Proposed objects and exact interfaces are in the [component briefs](components/README.md); shared behavior is in [contracts](contracts.md).
+Ten component assignments contain 42 procedures and one inline table-valued function, 43 objects total. There is no quota to fill with views or extra helpers. Public objects and exact interfaces are in the [component briefs](components/README.md); shared behavior is in [contracts](contracts.md).
 
 | Assignment | Objects | Responsibility |
 |---|---:|---|
@@ -76,7 +76,7 @@ Acceptance changes only AcceptedAnswerId and activity; it does not replay vote t
 1. **Assessment (this delivery):** recorded schema, features, interfaces, boundaries, and assignments.
 2. **Independent implementation:** give each LLM the common handoff and one component brief. Implement tags first because its parser is the one shared function; users, comments, votes, moderation, and badges can be authored independently. Questions, token-based discovery, and profiles use the parser; single-tag analytics can match a complete delimiter-wrapped tag directly. Answers follow the shared rules but do not call question procedures. Authoring can overlap; deployment must put the parser first. Follow the [ordered implementation plan](handoff.md#ordered-implementation-plan) for the recommended handoff sequence.
 3. **Integration:** assemble scripts, check output contracts, verify write invariants and concurrent calls on an authorized disposable restore. Resolve interface disagreements without restyling all code.
-4. **Workload packaging:** parameter queries and independent SQLQueryStress call scripts, then mixed sessions; no need to chain new IDs between operations.
+4. **Workload packaging:** one mixed SQLQueryStress batch with one parameter query and one mapping; no need to chain new IDs between operations.
 5. **Release validation:** repeat smoke/concurrency checks against 2024-04, confirm schema compatibility and runnable examples, publish installation and restore instructions. No permanent data cleanup mechanism.
 
 Each LLM owns its own SQL and example files. The integrating session owns deployment order and shared contracts. Contributor questions that change a contract should become an explicit design amendment, not silent local divergence. [Handoff instructions](handoff.md) provide a copyable prompt.

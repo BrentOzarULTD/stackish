@@ -1,0 +1,132 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Stackish.Desktop" x:Class="Stackish.Desktop.MainWindow" x:DataType="local:MainViewModel"
+        Title="Stackish" Width="1280" Height="800" MinWidth="960" MinHeight="640">
+  <Grid RowDefinitions="Auto,*">
+    <Border Background="White" BorderBrush="#E4E0DA" BorderThickness="0,0,0,1">
+      <StackPanel>
+        <TextBlock IsVisible="{Binding IsPreview}" Text="Design preview · illustrative metrics · no database connection" FontSize="12" Foreground="#5C5F68" Background="#F2F0EC" Padding="20,5" />
+        <Grid Height="56" ColumnDefinitions="Auto,*,Auto" Margin="20,0">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Border Background="#C8202F" CornerRadius="6" Width="26" Height="26">
+              <StackPanel Spacing="3" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Border Width="16" Height="3" Background="White" CornerRadius="1" />
+                <Border Width="12" Height="3" Background="White" CornerRadius="1" />
+                <Border Width="8" Height="3" Background="White" CornerRadius="1" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="Stackish" FontSize="19" FontWeight="Bold" VerticalAlignment="Center" />
+            <Border Width="1" Height="28" Background="#E4E0DA" Margin="6,0,16,0" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Text="{Binding ConnectionLabel}" ToolTip.Tip="{Binding ConnectionVersion}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" Margin="0,0,16,0" />
+          <StackPanel Grid.Column="2" VerticalAlignment="Center" IsVisible="{Binding Connected}">
+            <TextBlock IsVisible="{Binding Busy}" Text="Connection locked while running" Classes="helper" />
+            <Button Classes="secondary" Content="Edit connection" Command="{Binding EditCommand}" IsVisible="{Binding Idle}" IsEnabled="{Binding CanConfigure}" />
+          </StackPanel>
+        </Grid>
+        <StackPanel IsVisible="{Binding ShowConnection}" Margin="20,0,20,14" Spacing="8" IsEnabled="{Binding CanConfigure}">
+          <Grid ColumnDefinitions="1.5*,1.1*,*,*,Auto">
+            <StackPanel Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Server" /><TextBox AutomationProperties.Name="Server" Text="{Binding Server}" PlaceholderText="server,1433" /></StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Database" /><TextBox AutomationProperties.Name="Database" Text="{Binding Database}" /></StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Username" /><TextBox AutomationProperties.Name="Username" Text="{Binding Username}" /></StackPanel>
+            <StackPanel Grid.Column="3" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Password" /><TextBox AutomationProperties.Name="Password" Text="{Binding Password}" PasswordChar="●" /></StackPanel>
+            <Button Grid.Column="4" Content="{Binding TestLabel}" Command="{Binding TestCommand}" VerticalAlignment="Bottom" Height="36" Background="#1E1F23" Foreground="White" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="20">
+            <TextBlock Classes="helper" Text="Server accepts name, name\instance, or name,port" VerticalAlignment="Center" />
+            <CheckBox Content="Trust server certificate" IsChecked="{Binding TrustCertificate}" FontSize="13" MinHeight="24" />
+            <TextBlock Classes="helper" Text="Password is not saved" VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+        <Border IsVisible="{Binding HasMessage}" Background="#FBE9E7" CornerRadius="6" Padding="12,10" Margin="20,0,20,14">
+          <TextBlock Text="{Binding Message}" Foreground="#7A1A14" TextWrapping="Wrap" />
+        </Border>
+      </StackPanel>
+    </Border>
+    <Grid Grid.Row="1" ColumnDefinitions="300,20,*" Margin="20">
+      <Grid RowDefinitions="*,Auto">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="14">
+            <Border Classes="card" Padding="18">
+              <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="title" Text="Concurrent operations" /><TextBlock Grid.Column="1" Classes="helper" Text="1–200" /></Grid>
+                <NumericUpDown AutomationProperties.Name="Concurrent operations" Value="{Binding Concurrency}" Minimum="1" Maximum="200" Increment="1" FormatString="0" Height="44" FontSize="22" FontWeight="SemiBold" IsEnabled="{Binding CanConfigure}" />
+                <TextBlock Classes="helper" Text="How many database calls can run at once. Fixed during each run for comparison." />
+                <Border Height="1" Background="#EEEAE4" Margin="0,3" />
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="title" Text="Workload mix" /><Border Grid.Column="1" Background="#F2F0EC" CornerRadius="12" Padding="8,2"><TextBlock Text="Automatic" FontSize="12" FontWeight="SemiBold" /></Border></Grid>
+                <Grid ColumnDefinitions="55*,2,45*" Height="10"><Border Background="#2F6DB5" CornerRadius="3,0,0,3" /><Border Grid.Column="2" Background="#C66A12" CornerRadius="0,3,3,0" /></Grid>
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="55% reads" FontSize="13" /><TextBlock Grid.Column="1" Text="45% writes" FontSize="13" /></Grid>
+                <TextBlock Classes="helper" Text="– Broad activity across existing posts&#10;– Repeated hits on a few hot posts&#10;– Occasional expensive searches" LineHeight="22" />
+                <TextBlock Classes="helper" Text="Percentages are calls, not CPU or time." FontSize="12" />
+              </StackPanel>
+            </Border>
+            <Border Background="#FBF0DC" CornerRadius="8" Padding="14,12">
+              <TextBlock Foreground="#4A3200" FontSize="13" TextWrapping="Wrap"><Run FontWeight="Bold" Text="Writes to " /><Run FontWeight="Bold" Text="{Binding Database}" /><Run Text=". Adds questions, answers, votes and edits. Use a training copy." /></TextBlock>
+            </Border>
+            <Border Classes="card" Padding="14,12">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="label" Text="{Binding BaselineLabel}" />
+                <TextBlock Classes="helper" Text="{Binding BaselineSummary}" />
+                <Button Classes="secondary" Content="Use this run as baseline" Command="{Binding BaselineCommand}" IsVisible="{Binding HasRun}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                <Button Content="Clear baseline" Command="{Binding ClearBaselineCommand}" IsVisible="{Binding HasBaseline}" Background="Transparent" FontSize="12" Padding="0,4" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="1" Spacing="6" Margin="0,14,0,0">
+          <Button Classes="primary" Content="{Binding StartLabel}" Command="{Binding StartCommand}" IsVisible="{Binding ShowStart}" HorizontalAlignment="Stretch" />
+          <Button Classes="primary stop" Content="{Binding StopLabel}" Command="{Binding StopCommand}" IsVisible="{Binding ShowStop}" HorizontalAlignment="Stretch" />
+          <TextBlock Classes="helper" Text="{Binding ActionHint}" TextAlignment="Center" FontSize="12" />
+        </StackPanel>
+      </Grid>
+      <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" VerticalContentAlignment="Stretch">
+      <Grid RowDefinitions="Auto,Auto,*" MinHeight="600">
+        <Border Classes="card" Margin="0,0,0,14" Padding="18,14">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="8" Margin="0,0,16,0">
+              <Border Background="{Binding StatusBackground}" CornerRadius="22" Padding="12,4" HorizontalAlignment="Left"><TextBlock Text="{Binding Status}" Foreground="{Binding StatusColor}" FontWeight="Bold" FontSize="22" /></Border>
+              <TextBlock Text="{Binding StatusDetail}" Classes="helper" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center"><TextBlock Text="ELAPSED" HorizontalAlignment="Right" Classes="label" FontSize="12" /><TextBlock Text="{Binding Elapsed}" FontFamily="avares://Stackish/Assets#IBM Plex Mono" FontWeight="SemiBold" FontSize="30" /></StackPanel>
+          </Grid>
+        </Border>
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" Margin="0,0,-12,0">
+          <Border Classes="card" Margin="0,0,12,12"><StackPanel Spacing="3"><TextBlock Classes="label" Text="Calls completed" /><TextBlock Classes="metric" Text="{Binding Completed}" /><TextBlock Classes="helper" Text="{Binding ReadWriteDetail}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" /></StackPanel></Border>
+          <Border Grid.Column="1" Classes="card" Margin="0,0,12,12"><StackPanel Spacing="3"><TextBlock Classes="label" Text="Queries / sec" ToolTip.Tip="Completed Stackish calls per second; errors and canceled calls excluded. One call can execute multiple SQL statements." /><TextBlock Classes="metric" Text="{Binding Rate}" /><TextBlock Classes="helper" Text="{Binding RateDetail}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" /></StackPanel></Border>
+          <Border Grid.Column="2" Classes="card" Margin="0,0,12,12"><StackPanel Spacing="3"><TextBlock Classes="label" Text="Active calls" /><TextBlock Classes="metric" Text="{Binding Active}" /><TextBlock Classes="helper" Text="{Binding ActiveDetail}" /></StackPanel></Border>
+          <Border Grid.Row="1" Classes="card" Margin="0,0,12,12"><StackPanel Spacing="3"><TextBlock Classes="label" Text="✓  Successful writes" /><TextBlock Classes="metric" Text="{Binding Applied}" /><TextBlock Classes="helper" Text="writes that changed data" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" /></StackPanel></Border>
+          <Border Grid.Row="1" Grid.Column="1" Classes="card" Margin="0,0,12,12"><StackPanel Spacing="3"><TextBlock Classes="label" Text="–  Expected outcomes" /><TextBlock Classes="metric" Text="{Binding Expected}" /><TextBlock Classes="helper" Text="{Binding OutcomeDetail}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding OutcomeDetail}" /></StackPanel></Border>
+          <Border Grid.Row="1" Grid.Column="2" Classes="card" Margin="0,0,12,12"><StackPanel Spacing="3"><TextBlock Classes="label" Text="×  Errors" /><TextBlock Classes="metric" Text="{Binding Errors}" Foreground="#B3261E" /><TextBlock Classes="helper" Text="{Binding ErrorDetail}" /></StackPanel></Border>
+        </Grid>
+        <Border Grid.Row="2" Classes="card" Padding="18,12">
+          <Grid RowDefinitions="Auto,Auto,*,Auto">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="title" Text="Queries per second" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="secondary" Content="Errors &amp; outcomes" Command="{Binding DrawerCommand}" IsVisible="{Binding HasRun}" />
+            </Grid>
+            <StackPanel Grid.Row="1" Spacing="6" Margin="0,8,0,4">
+              <StackPanel Orientation="Horizontal" Spacing="18">
+                <TextBlock Text="┄┄  Baseline (before)" Foreground="#6E717A" FontSize="13" />
+                <TextBlock Text="━━  Current run (after)" Foreground="#2F6DB5" FontSize="13" />
+              </StackPanel>
+              <TextBlock Text="{Binding ComparisonText}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+            </StackPanel>
+            <local:ComparisonChart Grid.Row="2" Current="{Binding CurrentRun}" Baseline="{Binding BaselineRun}" MinHeight="100" />
+            <TextBlock Grid.Row="3" Classes="helper" Text="Elapsed time from each run’s start · errors excluded · check outcomes alongside throughput" FontSize="11" Margin="0,6,0,0" />
+          </Grid>
+        </Border>
+        <Border Grid.RowSpan="3" IsVisible="{Binding ShowDrawer}" Width="410" MaxWidth="550" HorizontalAlignment="Right" Background="White" BorderBrush="#E4E0DA" BorderThickness="1" CornerRadius="8" Padding="20" BoxShadow="-10 0 24 0 #181E1F23">
+          <Grid RowDefinitions="Auto,Auto,*,Auto">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Errors &amp; outcomes" FontSize="17" FontWeight="Bold" VerticalAlignment="Center" /><Button Grid.Column="1" Content="✕" Command="{Binding DrawerCommand}" Background="Transparent" AutomationProperties.Name="Close errors and outcomes" /></Grid>
+            <TextBlock Grid.Row="1" Classes="helper" Text="SQL failures are separate from calls that made no change. Stop stays available." Margin="0,14" />
+            <TabControl Grid.Row="2">
+              <TabItem Header="Errors"><ScrollViewer><TextBlock Text="{Binding ErrorText}" TextWrapping="Wrap" FontSize="13" Margin="0,12" /></ScrollViewer></TabItem>
+              <TabItem Header="Expected outcomes"><ScrollViewer><TextBlock Text="{Binding OutcomesText}" TextWrapping="Wrap" FontSize="13" Margin="0,12" /></ScrollViewer></TabItem>
+            </TabControl>
+            <Button Grid.Row="3" Content="Copy error details" Classes="secondary" Click="CopyErrors" Margin="0,12,0,0" />
+          </Grid>
+        </Border>
+      </Grid>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</Window>

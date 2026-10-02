@@ -1,0 +1,123 @@
+[
+  {
+    "name": "01-pages",
+    "share": 18,
+    "mappings": {
+      "InputQuestionId": "QuestionId"
+    },
+    "notes": "Question pages and comment reads; returned empty comments are legitimate."
+  },
+  {
+    "name": "02-discovery",
+    "share": 16,
+    "mappings": {},
+    "notes": "Global directory sorts can still scan; selected ID is unused, so no parameter mapping is needed."
+  },
+  {
+    "name": "03-users",
+    "share": 10,
+    "mappings": {
+      "InputUserId": "UserId"
+    },
+    "notes": "Existing post owners improve useful user-post/profile reads; this biases toward active authors."
+  },
+  {
+    "name": "04-catalog",
+    "share": 8,
+    "mappings": {
+      "InputTagName": "TagName",
+      "InputUserId": "UserId",
+      "InputPostId": "PostId"
+    },
+    "notes": "Tag tokens come from the selected questions; history is naturally empty on unedited imported posts."
+  },
+  {
+    "name": "05-counters",
+    "share": 10,
+    "mappings": {
+      "InputQuestionId": "QuestionId",
+      "InputUserId": "UserId"
+    },
+    "notes": "Successful independent counter increments and access updates."
+  },
+  {
+    "name": "06-votes",
+    "share": 12,
+    "mappings": {
+      "InputPostId": "PostId",
+      "InputPostTypeId": "PostTypeId",
+      "InputUserId": "UserId"
+    },
+    "notes": "State-aware single-operation calls; a fresh run needs no preceding voting run. Repeated actors alternate removal/insertion. Concurrent duplicates may legitimately return NoChange/Conflict."
+  },
+  {
+    "name": "07-content",
+    "share": 10,
+    "mappings": {
+      "InputQuestionId": "QuestionId",
+      "InputUserId": "UserId",
+      "InputTagName": "TagName"
+    },
+    "notes": "If a cached answer target has closed, comment instead; closure after the check can still race. Refresh pools between bounded runs. Text varies per invocation."
+  },
+  {
+    "name": "08-edits",
+    "share": 7,
+    "mappings": {
+      "InputPostId": "PostId",
+      "InputPostTypeId": "PostTypeId",
+      "InputUserId": "UserId",
+      "InputTag1": "Tag1",
+      "InputTag2": "Tag2"
+    },
+    "notes": "Replaces content/profile fields. Retags alternate two valid sets; concurrent calls may race into NoChange."
+  },
+  {
+    "name": "09-maintenance",
+    "share": 3,
+    "mappings": {
+      "InputQuestionId": "QuestionId",
+      "InputAnswerId": "AnswerId",
+      "InputUserId": "UserId",
+      "InputRelatedQuestionId": "RelatedQuestionId"
+    },
+    "notes": "Existing parent/answer/owner tuples; actions adapt to live state, with ordinary races left visible."
+  },
+  {
+    "name": "10-registration",
+    "share": 1,
+    "mappings": {},
+    "notes": "Independent creation; returned ID need not feed any other group."
+  },
+  {
+    "name": "11-hot-counters",
+    "share": 2,
+    "mappings": {
+      "InputQuestionId": "QuestionId",
+      "InputUserId": "UserId"
+    },
+    "notes": "Eight stable targets per run; increase threads for ordinary contention. Hot within a sampled window, not a claim of global popularity."
+  },
+  {
+    "name": "12-expensive",
+    "share": 3,
+    "mappings": {
+      "InputQuestionId": "QuestionId",
+      "InputTagName": "TagName",
+      "InputSearchText": "SearchText",
+      "InputFromDate": "FromDate",
+      "InputToDate": "ToDate",
+      "InputBadgeName": "BadgeName"
+    },
+    "notes": "3% invocation budget taken from original discovery (2%) and catalog (1%). Body/tag/related/leaderboard/badge work can dominate resources. Dates surround actual snapshot content."
+  },
+  {
+    "name": "13-comment-maintenance",
+    "share": 0,
+    "mappings": {
+      "InputCommentId": "CommentId",
+      "InputUserId": "UserId"
+    },
+    "notes": "Depleting targets: run no more total calls than returned parameter rows, then reload. Do not loop stale deleted comments."
+  }
+]

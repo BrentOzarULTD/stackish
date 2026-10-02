@@ -1,5 +1,7 @@
 # Component assignments
 
+All ten components are implemented and included in [the complete deployment](../../sql/deploy.sql). The inventory reconciles to 42 procedures plus one function; see [integration evidence](../integration-validation.md).
+
 Read [shared contracts](../contracts.md), [schema](../research/schema.md), and [handoff](../handoff.md) before implementing any component. All listed names have the prefix `dbo.Stackish_`. `PAGE` expands to the paging parameters in the contracts. `Write` means the standard Outcome/EntityId result. Output aliases and column order are contracts. See [result shapes](../result-shapes.md).
 
 | Assignment | Procedures | Shared functions |

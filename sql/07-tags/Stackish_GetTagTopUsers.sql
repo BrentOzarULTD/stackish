@@ -31,7 +31,8 @@ BEGIN
         SELECT p.Id
         FROM dbo.Posts AS p
         WHERE p.PostTypeId = 1
-          AND CHARINDEX(N'<' + @catalogName + N'>', p.Tags) > 0;
+          AND (CHARINDEX(N'<' + @catalogName + N'>', p.Tags) > 0
+               OR (LEFT(p.Tags,1)=N'|' AND RIGHT(p.Tags,1)=N'|' AND CHARINDEX(N'|',@catalogName)=0 AND CHARINDEX(N'|' + @catalogName + N'|',p.Tags)>0));
 
     -- Materialize the matching questions before aggregating their answers.
     -- Delimiters give exact membership without expanding every tag on every post.
