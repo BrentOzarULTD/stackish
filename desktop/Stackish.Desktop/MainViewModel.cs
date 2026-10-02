@@ -86,7 +86,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string Completed => run?.Completed.ToString("N0") ?? "—";
     public string ReadWriteDetail => run == null ? "" : $"{run.Reads:N0} reads · {run.Writes:N0} writes";
     public string Rate => run == null ? "—" : FormatRate(busy ? RecentRate(run) : run.Average);
-    public string RateDetail => run == null ? "" : busy ? $"recent buckets · average {FormatRate(run.Average)}" : "average while work was being started";
+    public string RateDetail => run == null ? "" : busy ? $"recent buckets · average {FormatRate(run.Average)}" : "average over the measured run";
     public string Active => run?.Active.ToString("N0") ?? "—";
     public string ActiveDetail => run == null ? "" : busy ? $"of {(int)concurrency} allowed" : "all calls finished";
     public string Applied => run?.Applied.ToString("N0") ?? "—";
@@ -139,6 +139,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try { version = await new SqlWorkloadBackend(Settings, password).TestAsync(); connected = true; Save(); }
         catch (Exception ex) { message = SqlWorkloadBackend.Explain(ex); connected = false; }
         finally { testing = false; Refresh(); }
+    }
+    public async Task CopyErrorsAsync(Func<string, Task> writeClipboard)
+    {
+        try { await writeClipboard(ErrorText); }
+        catch (Exception)
+        {
+            message = "Could not copy to the clipboard. Your error details are still available below. Try copying again.";
+            Refresh();
+        }
     }
     private async Task StartAsync()
     {

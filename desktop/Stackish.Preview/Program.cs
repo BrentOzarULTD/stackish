@@ -21,6 +21,25 @@ RunSnapshot Sample(int qps, int seconds, bool finished)
         [new(start.AddSeconds(seconds - 14), "Vote on post", "SQL Server chose this call as a deadlock victim. (SQL 1205)")]);
 }
 var baseline = Sample(310, 600, true);
+// Exercise clipboard failures offline: neither synchronous nor asynchronous backend
+// failures may escape to the async-void UI handler or change the measured run.
+var clipboardVm = new MainViewModel(new StateStore(Path.Combine(output, "empty-state")));
+clipboardVm.ShowPreview(baseline, Sample(421, 420, true), false, true);
+var preservedRun = clipboardVm.CurrentRun;
+foreach (Func<string, Task> failure in new Func<string, Task>[]
+{
+    _ => throw new InvalidOperationException("Clipboard unavailable"),
+    _ => Task.FromException(new IOException("Clipboard backend failed"))
+})
+{
+    clipboardVm.CopyErrorsAsync(failure).GetAwaiter().GetResult();
+    if (!clipboardVm.HasMessage || !clipboardVm.Message.Contains("Could not copy") || clipboardVm.CurrentRun != preservedRun)
+        throw new InvalidOperationException("Clipboard failure was not reported safely.");
+}
+string? copied = null;
+clipboardVm.CopyErrorsAsync(text => { copied = text; return Task.CompletedTask; }).GetAwaiter().GetResult();
+if (copied != clipboardVm.ErrorText) throw new InvalidOperationException("Clipboard retry lost the error details.");
+Console.WriteLine("Clipboard failure and retry checks passed.");
 foreach (var scenario in new[] { "setup", "baseline-saved", "comparison-running", "comparison-stopped", "stopping", "errors", "compact", "minimum-setup", "minimum-running" })
 {
     var vm = new MainViewModel(new StateStore(Path.Combine(output, "empty-state")));

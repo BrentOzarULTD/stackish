@@ -25,10 +25,10 @@
         </Grid>
         <StackPanel IsVisible="{Binding ShowConnection}" Margin="20,0,20,14" Spacing="8" IsEnabled="{Binding CanConfigure}">
           <Grid ColumnDefinitions="1.5*,1.1*,*,*,Auto">
-            <StackPanel Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Server" /><TextBox Text="{Binding Server}" PlaceholderText="server,1433" /></StackPanel>
-            <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Database" /><TextBox Text="{Binding Database}" /></StackPanel>
-            <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Username" /><TextBox Text="{Binding Username}" /></StackPanel>
-            <StackPanel Grid.Column="3" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Password" /><TextBox Text="{Binding Password}" PasswordChar="●" /></StackPanel>
+            <StackPanel Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Server" /><TextBox AutomationProperties.Name="Server" Text="{Binding Server}" PlaceholderText="server,1433" /></StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Database" /><TextBox AutomationProperties.Name="Database" Text="{Binding Database}" /></StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Username" /><TextBox AutomationProperties.Name="Username" Text="{Binding Username}" /></StackPanel>
+            <StackPanel Grid.Column="3" Spacing="4" Margin="0,0,12,0"><TextBlock Classes="label" Text="Password" /><TextBox AutomationProperties.Name="Password" Text="{Binding Password}" PasswordChar="●" /></StackPanel>
             <Button Grid.Column="4" Content="{Binding TestLabel}" Command="{Binding TestCommand}" VerticalAlignment="Bottom" Height="36" Background="#1E1F23" Foreground="White" />
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="20">
@@ -49,7 +49,7 @@
             <Border Classes="card" Padding="18">
               <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="title" Text="Concurrent operations" /><TextBlock Grid.Column="1" Classes="helper" Text="1–200" /></Grid>
-                <NumericUpDown Value="{Binding Concurrency}" Minimum="1" Maximum="200" Increment="1" FormatString="0" Height="44" FontSize="22" FontWeight="SemiBold" IsEnabled="{Binding CanConfigure}" />
+                <NumericUpDown AutomationProperties.Name="Concurrent operations" Value="{Binding Concurrency}" Minimum="1" Maximum="200" Increment="1" FormatString="0" Height="44" FontSize="22" FontWeight="SemiBold" IsEnabled="{Binding CanConfigure}" />
                 <TextBlock Classes="helper" Text="How many database calls can run at once. Fixed during each run for comparison." />
                 <Border Height="1" Background="#EEEAE4" Margin="0,3" />
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="title" Text="Workload mix" /><Border Grid.Column="1" Background="#F2F0EC" CornerRadius="12" Padding="8,2"><TextBlock Text="Automatic" FontSize="12" FontWeight="SemiBold" /></Border></Grid>

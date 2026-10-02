@@ -16,8 +16,10 @@ public partial class MainWindow : Window
     }
     private async void CopyErrors(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is MainViewModel vm && Clipboard is { } clipboard)
-            await clipboard.SetTextAsync(vm.ErrorText);
+        if (DataContext is MainViewModel vm)
+            await vm.CopyErrorsAsync(text => Clipboard is { } clipboard
+                ? clipboard.SetTextAsync(text)
+                : Task.FromException(new InvalidOperationException("Clipboard unavailable.")));
     }
     private void HandleKeys(object? sender, KeyEventArgs e)
     {
