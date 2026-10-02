@@ -25,7 +25,7 @@ def verify(archive, runtime, require_notarized=False):
             executable = app/'Contents'/'MacOS'/'Stackish'
             if not executable.stat().st_mode & 0o111:
                 raise RuntimeError('Mac launcher lost executable permissions')
-            subprocess.run(['lipo', '-verify_arch', 'arm64' if runtime == 'osx-arm64' else 'x86_64', str(executable)], check=True)
+            subprocess.run(['lipo', str(executable), '-verify_arch', 'arm64' if runtime == 'osx-arm64' else 'x86_64'], check=True)
             subprocess.run(['codesign', '--verify', '--deep', '--strict', str(app)], check=True)
             if require_notarized:
                 subprocess.run(['xcrun', 'stapler', 'validate', str(app)], check=True)
