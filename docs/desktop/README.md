@@ -2,7 +2,7 @@
 
 The first desktop version targets Windows and macOS. Use it to generate ongoing activity during migration rehearsals or compare before/after tuning runs. The app does not install database objects, change indexes, or restore data; the separate deployment entry point now installs missing supporting indexes. Linux packaging is deferred.
 
-For a packaged review build, unzip the archive and open `Stackish.app` on Mac, or extract the whole Windows archive and open `Stackish.exe` inside its folder. Keep the Windows companion files together. The packages include .NET; an SDK is only needed to build from source.
+Download an unsigned build from [GitHub Releases](https://github.com/BrentOzarULTD/stackish/releases/tag/v0.1.0-preview.1). Unzip the archive and open `Stackish.app` on Mac, or extract the whole Windows archive and open `Stackish.exe` inside its folder. Keep the Windows companion files together. The packages include .NET; an SDK is only needed to build from source.
 
 ## Run, tune, compare
 
@@ -68,3 +68,11 @@ dotnet run --project desktop/Stackish.LiveChecks -c Release -- --allow-mutations
 ```
 
 Use `--trust-certificate` only when that is the intended certificate policy for your training server. The test commits real mutations. It requests Stop after the measured duration, drains/cancels exactly like the app, and finishes before starting the second run. Ctrl+C requests Stop; wait for it to finish. Its temporary baseline file is removed after validation. Output can contain nonsecret server/database/login settings and database error messages; keep raw evidence outside the repository. There is no tuning between these two runs, so a difference is a repeat-run observation, not proof of a tuning improvement.
+
+For a longer single continuous run, use the same evidence client with an explicit duration and run count:
+
+```sh
+dotnet run --project desktop/Stackish.LiveChecks -c Release -- --allow-mutations --seconds 1800 --runs 1 --workers 8
+```
+
+`--seconds` is the measured duration per run (10–86,400 seconds); `--runs` accepts one or two and defaults to two. Setup and stopping time are additional. The normal desktop app still runs until you press Stop. The continuous check commits writes and includes expensive searches; its duration is not a guarantee of uniform throughput or uninterrupted successful writes.

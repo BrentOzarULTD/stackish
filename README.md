@@ -62,7 +62,15 @@ You can rerun the same deployment command. It reuses suitable existing indexes a
 
 ## Open the app
 
-There are no published release downloads yet. You can build from source with these commands, run from the repository root on either Windows or Mac:
+Download [Stackish Preview 1](https://github.com/BrentOzarULTD/stackish/releases/tag/v0.1.0-preview.1):
+
+- [Windows x64](https://github.com/BrentOzarULTD/stackish/releases/download/v0.1.0-preview.1/Stackish-win-x64.zip)
+- [Mac with Apple Silicon](https://github.com/BrentOzarULTD/stackish/releases/download/v0.1.0-preview.1/Stackish-osx-arm64.zip)
+- [Mac with an Intel processor](https://github.com/BrentOzarULTD/stackish/releases/download/v0.1.0-preview.1/Stackish-osx-x64.zip)
+
+The release includes SHA-256 checksums. These are unsigned previews; your operating system may warn or block them under its security policy. No SDK is needed to use a download.
+
+Or build from source with these commands, run from the repository root on either Windows or Mac:
 
 ```sh
 dotnet restore desktop/Stackish.slnx --locked-mode
@@ -98,7 +106,7 @@ Rerun `sql/deploy.sql` after restoring, test the app's connection, and **Clear b
 
 ## Validation and source
 
-The 2024-04 testbed passed deployment repeatability, integration smoke checks, targeted contention checks, and two bounded desktop workload runs. These establish a tested starting point, not correctness of a future port or suitability for unattended long-duration runs. SQLQueryStress packaging remains available as an optional alternative; SQLQueryStress itself was not run during this validation.
+The 2024-04 testbed passed deployment repeatability, integration smoke checks, targeted contention checks, and two bounded desktop workload runs. Continuous-run results and known limitations are recorded on the [preview release page](https://github.com/BrentOzarULTD/stackish/releases/tag/v0.1.0-preview.1). These checks establish a tested starting point, not correctness of a future port or a guarantee of unattended operation. Expensive reads can occupy workers for minutes, delay new writes, time out, or encounter deadlocks; watch the error and successful-write counts during a migration rehearsal. SQLQueryStress packaging remains available as an optional alternative; SQLQueryStress itself was not run during this validation.
 
 - [Detailed installation and validation commands](docs/installation.md)
 - [Desktop operation, packaging, and measurement details](docs/desktop/README.md)
