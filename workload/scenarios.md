@@ -29,7 +29,7 @@ SQLQueryStress obtains a parameter set, cycles its rows and reuses values when e
 | 12-expensive | QuestionId → @InputQuestionId; TagName → @InputTagName; SearchText → @InputSearchText; FromDate → @InputFromDate; ToDate → @InputToDate; BadgeName → @InputBadgeName |
 | 13-comment-maintenance | CommentId → @InputCommentId; UserId → @InputUserId |
 
-[manifest.json](manifest.json) records the same mappings and baseline shares in machine-readable form. [docs/workload.md](../docs/workload.md) explains the default single-window invocation mix.
+[manifest.json](manifest.json) records the same mappings and baseline shares in machine-readable form.
 
 ## What one invocation does
 

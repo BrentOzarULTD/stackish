@@ -1,7 +1,0 @@
-# Page reads implementation
-
-Implemented the four page/read procedures in `sql/08-pages/`. `GetQuestionPage` always emits five result sets, including typed empty sets for a missing or wrong-type question. It pages answers before applying per-post comment limits, preserves dangling authors and linked-question targets, and sorts tags explicitly. `GetUserProfile` computes each aggregate independently to avoid one-to-many multiplication, derives answer tags from parent questions, and returns five sets. History is read directly from stored `PostHistory` rows only.
-
-These procedures do not write counters or access records. `GetUserProfile` and related post/tag/badge summaries can scan large tables on the public dump; no prohibited infrastructure or indexes were added. `tests/08-pages/acceptance.sql` requires a multi-result-set capable client and explicitly exercises missing targets. It was run on the authorized disposable 2018-06 database; the integration wave now adds exact multi-result assertions in `tests/integration/`, including missing targets and pagination.
-
-Integration fixes (September 30, 2026): parent joins in user post/profile sets now require a question, a missing user yields an empty GetUserPosts set even when orphan posts survive, and history UserId zero is normalized to NULL. See [integration evidence](../integration-validation.md) for the reproduced defect and executed final checks.
