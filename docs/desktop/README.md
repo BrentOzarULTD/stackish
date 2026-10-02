@@ -9,7 +9,7 @@ Mac downloads have been withdrawn after a bundle-signature defect was reproduced
 ## Run, tune, compare
 
 1. Restore your training database. Enter its connection details in the app and click **Install / update Stackish** for a fresh restore. This replaces Stackish module definitions and clears the saved baseline. Optional indexes are a separate choice in the [installation guide](../installation.md).
-2. Open the app, enter the server/database and SQL login, then **Test connection**. That check verifies the engine, compatibility, schema, lookups and installed inventory without changing them. Passwords stay in memory and are never saved.
+2. Open the app, enter the server/database and SQL login, then **Test connection**. That check verifies the engine, compatibility, schema, lookups and installed inventory without changing them. Passwords stay in memory unless you check **Remember password**. After a successful connection, the app saves the password in macOS Keychain or Windows Credential Manager.
 3. Choose concurrent operations and **Start workload**. The app selects eligible targets and opens worker connections before starting the measured interval. No SQL or parameter mappings are needed.
 4. Click **Stop**. New calls stop and active queries receive cancellation immediately, with no grace period. The app waits for the driver to acknowledge cancellation and close its connections. The first nonfailed run of at least five seconds with completed calls becomes the baseline. Cancellation is not proof that a write did not commit.
 5. Tune the database in SSMS. Return to Stackish and click **Start new run**. The saved baseline appears as a dashed gray “Previous run” curve and the new run as a solid blue “Current run” curve, both aligned to elapsed time from their own start.
@@ -50,6 +50,12 @@ python3 desktop/package.py --runtime win-x64
 ```
 
 macOS output: `desktop/artifacts/<runtime>/Stackish.app`. Windows output: `desktop/artifacts/win-x64/publish/Stackish.exe`; keep its accompanying files together. Each runtime directory also contains a ZIP for validation. The Mac ZIP preserves the app executable permissions. Mac bundles receive an ad-hoc integrity signature and Windows builds remain unsigned. These are development builds, not Developer ID-signed/notarized public Mac installers. Native Windows execution and Intel Mac execution must be validated on those platforms before claiming release readiness. The CI workflow builds and tests the Windows/Mac targets without a database or credentials; it never starts a live workload.
+
+**Availability:** Remember password is implemented in source; the existing local testing copy has not been rebuilt for it. Native vault checks on signed Mac and Windows packages remain pending.
+
+**Remember password** is off by default. Saved passwords are scoped to the exact server, database, and username (ignoring surrounding whitespace). The last connection reloads automatically at launch. Changing any connection field clears the password field and the checkbox; click **Load saved password** to retrieve a password for that connection. Changing connections does not delete another connection’s saved password. Unchecking Remember password deletes the current connection’s saved entry, but keeps the entered password in memory for this session. A failed SQL connection does not save a new password. A vault error is shown and never falls back to a plain-text file. macOS may ask for Keychain access; denying access leaves manual password entry available. On Windows, entries persist for the current Windows user on this computer.
+
+The implementation calls Apple’s [Keychain Services](https://developer.apple.com/documentation/security/secitemcopymatching(_:_:)) and Microsoft’s [Credential Manager](https://learn.microsoft.com/en-us/windows/win32/api/wincred/nf-wincred-credwritew) directly. No passwords are put in shell commands, logs, or the settings model.
 
 Nonsecret connection settings and one baseline (including sampled IDs, measurements, and error summaries) are stored under the current user's local application-data directory in `Stackish/state.json`. It contains no password. A failed save is reported in the app. Do not commit local state or real connection details.
 

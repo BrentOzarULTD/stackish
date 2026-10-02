@@ -91,7 +91,7 @@ For the Windows preview, extract the entire ZIP and open `Stackish.exe`; keep it
 
 The mix selects roughly **55% read calls and 45% write calls**, including hot targets, content creation, and occasional expensive searches and aggregations. Those are invocation proportions, not shares of CPU or elapsed time. Long-running reads can occupy workers for a while. Some completed calls legitimately report `Conflict`, `NoChange`, or `NotFound`; watch those alongside successful writes and errors, especially during long rehearsals as the data changes.
 
-The password stays in memory. The app saves nonsecret connection settings and a baseline locally, including sampled IDs and error summaries; keep that local state out of your repository as well.
+By default, the password stays in memory. Check **Remember password** to store it in macOS Keychain or Windows Credential Manager after a successful connection. It reloads on the next launch for that connection; use **Load saved password** after changing connection details. Uncheck Remember password to remove that connection’s saved password. The app saves nonsecret connection settings and a baseline locally, including sampled IDs and error summaries; keep that local state out of your repository as well.
 
 ## Compare before and after tuning
 

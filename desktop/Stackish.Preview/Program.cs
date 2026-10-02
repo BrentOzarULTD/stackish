@@ -58,3 +58,54 @@ foreach (var scenario in new[] { "setup", "baseline-saved", "comparison-running"
     window.Close();
     Console.WriteLine(scenario + ".png");
 }
+
+// Credential UI tests use a fake vault: no Keychain access, prompts, or real secrets.
+var vault = new TestPasswordStore();
+var passwordVm = new MainViewModel(new StateStore(Path.Combine(output, "empty-state")), vault)
+{ Server = "fixture", Database = "database", Username = "user", Password = "test-secret" };
+void Finish(Task task)
+{
+    var deadline = DateTime.UtcNow.AddSeconds(5);
+    while (!task.IsCompleted && DateTime.UtcNow < deadline) Dispatcher.UIThread.RunJobs();
+    if (!task.IsCompleted) throw new TimeoutException("Credential UI operation did not finish");
+    task.GetAwaiter().GetResult();
+}
+Finish(passwordVm.RememberSuccessfulPasswordAsync());
+if (vault.Secret != null) throw new Exception("Passwords must not be saved without opt-in");
+passwordVm.RememberPassword = true;
+Finish(passwordVm.RememberSuccessfulPasswordAsync());
+if (vault.Secret != "test-secret") throw new Exception("Opted-in password was not saved");
+passwordVm.Password = "";
+Finish(passwordVm.LoadPasswordAsync());
+if (passwordVm.Password != "test-secret" || !passwordVm.RememberPassword) throw new Exception("Saved password did not reload");
+passwordVm.Username = "other";
+if (passwordVm.Password != "" || passwordVm.RememberPassword) throw new Exception("Changed connection reused another login's password");
+Finish(passwordVm.LoadPasswordAsync());
+if (passwordVm.Password != "") throw new Exception("Wrong identity loaded a password");
+passwordVm.Username = "user";
+Finish(passwordVm.LoadPasswordAsync());
+vault.Fail = true;
+Finish(passwordVm.ForgetPasswordAsync());
+if (!passwordVm.RememberPassword || !passwordVm.Message.Contains("may still be saved")) throw new Exception("Deletion failure was hidden");
+vault.Fail = false;
+Finish(passwordVm.ForgetPasswordAsync());
+if (vault.Secret != null || passwordVm.RememberPassword || passwordVm.Password != "test-secret") throw new Exception("Forget did not remove only the stored password");
+vault.Fail = true;
+Finish(passwordVm.LoadPasswordAsync());
+if (!passwordVm.Message.Contains("Could not read")) throw new Exception("Vault read error was hidden");
+passwordVm.RememberPassword = true;
+Finish(passwordVm.RememberSuccessfulPasswordAsync());
+if (!passwordVm.Message.Contains("could not save")) throw new Exception("Vault write error was hidden");
+Console.WriteLine("Credential opt-in, reload, identity isolation, deletion and error checks passed.");
+
+sealed class TestPasswordStore : IPasswordStore
+{
+    public string Name => "test vault";
+    public string? Secret;
+    private string? key;
+    public bool Fail;
+    private void Check() { if (Fail) throw new IOException("Synthetic vault failure"); }
+    public string? Read(ConnectionSettings connection) { Check(); return key == PasswordStore.Key(connection) ? Secret : null; }
+    public void Write(ConnectionSettings connection, string password) { Check(); key = PasswordStore.Key(connection); Secret = password; }
+    public void Delete(ConnectionSettings connection) { Check(); if (key == PasswordStore.Key(connection)) Secret = null; }
+}

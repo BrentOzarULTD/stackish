@@ -8,6 +8,9 @@ namespace Stackish.Desktop;
 public sealed class MainViewModel : INotifyPropertyChanged
 {
     private readonly StateStore store;
+    private readonly IPasswordStore passwords;
+    private bool rememberPassword, credentialBusy;
+    private string passwordHint = "Password is not saved";
     private readonly DispatcherTimer timer;
     private WorkloadRunner? runner;
     private Task? runTask;
@@ -24,9 +27,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private decimal concurrency = 8;
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public MainViewModel(StateStore? stateStore = null)
+    public MainViewModel(StateStore? stateStore = null, IPasswordStore? passwordStore = null)
     {
         store = stateStore ?? new StateStore();
+        passwords = passwordStore ?? PasswordStore.Create();
+        LoadPasswordCommand = new(() => _ = LoadPasswordAsync(), () => CanConfigure && HasCredentialIdentity);
         TestCommand = new(() => _ = TestAsync(), () => CanConfigure);
         DeployCommand = new(() => deploymentTask = DeployAsync(), () => CanConfigure);
         StartCommand = new(() => _ = StartAsync(), () => connected && CanConfigure);
@@ -50,8 +55,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (busy && runner?.Snapshot is { } snapshot) { run = snapshot; Refresh(); }
         });
         timer.Start();
+        // Offline previews use their own state directory and must never access the real vault.
+        if (stateStore == null) _ = LoadPasswordAsync();
     }
 
+    public ActionCommand LoadPasswordCommand { get; }
     public ActionCommand TestCommand { get; }
     public ActionCommand DeployCommand { get; }
     public bool Deploying => deploying;
@@ -62,10 +70,72 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ActionCommand DrawerCommand { get; }
     public ActionCommand BaselineCommand { get; }
     public ActionCommand ClearBaselineCommand { get; }
-    public string Server { get => server; set => Set(ref server, value); }
-    public string Database { get => database; set { Set(ref database, value); Refresh(); } }
-    public string Username { get => username; set => Set(ref username, value); }
+    public string Server { get => server; set { if (server != value) { server = value; CredentialIdentityChanged(); } } }
+    public string Database { get => database; set { if (database != value) { database = value; CredentialIdentityChanged(); } } }
+    public string Username { get => username; set { if (username != value) { username = value; CredentialIdentityChanged(); } } }
     public string Password { get => password; set => Set(ref password, value); }
+    public bool RememberPassword
+    {
+        get => rememberPassword;
+        set
+        {
+            if (value == rememberPassword || credentialBusy) return;
+            if (!value) { _ = ForgetPasswordAsync(); return; }
+            rememberPassword = true;
+            passwordHint = $"Will save in {passwords.Name} after a successful connection";
+            Refresh();
+        }
+    }
+    public string RememberPasswordLabel => $"Remember password in {passwords.Name}";
+    public string PasswordHint => passwordHint;
+    private bool HasCredentialIdentity => !string.IsNullOrWhiteSpace(server) && !string.IsNullOrWhiteSpace(database) && !string.IsNullOrWhiteSpace(username);
+    private void CredentialIdentityChanged()
+    {
+        password = ""; rememberPassword = false; connected = false;
+        passwordHint = "Password is not saved for this connection";
+        Refresh();
+    }
+    public async Task LoadPasswordAsync()
+    {
+        if (!CanConfigure || !HasCredentialIdentity) return;
+        var identity = Settings;
+        credentialBusy = true; message = ""; Refresh();
+        try
+        {
+            string? saved = await Task.Run(() => passwords.Read(identity));
+            if (PasswordStore.Key(identity) != PasswordStore.Key(Settings)) return;
+            password = saved ?? ""; rememberPassword = saved != null;
+            passwordHint = saved == null ? "No saved password for this connection" : $"Saved in {passwords.Name}";
+        }
+        catch (Exception) { message = $"Could not read {passwords.Name}. Enter the password manually, or try Load saved password again."; }
+        finally { credentialBusy = false; Refresh(); }
+    }
+    public async Task ForgetPasswordAsync()
+    {
+        if (credentialBusy) return;
+        var identity = Settings;
+        credentialBusy = true; message = ""; Refresh();
+        try
+        {
+            await Task.Run(() => passwords.Delete(identity));
+            rememberPassword = false; passwordHint = "Saved password removed; the entered password lasts for this session";
+        }
+        catch (Exception) { message = $"Could not remove the saved password from {passwords.Name}. It may still be saved; try again."; }
+        finally { credentialBusy = false; Refresh(); }
+    }
+    // Called only after SQL authentication succeeds. Vault failure must not undo a working connection.
+    public async Task RememberSuccessfulPasswordAsync()
+    {
+        if (!rememberPassword) return;
+        var identity = Settings;
+        string secret = password;
+        try
+        {
+            await Task.Run(() => passwords.Write(identity, secret));
+            passwordHint = $"Saved in {passwords.Name}";
+        }
+        catch (Exception) { message = $"Connected, but could not save the password in {passwords.Name}. Try connecting again to retry."; }
+    }
     public bool TrustCertificate { get => trustCertificate; set => Set(ref trustCertificate, value); }
     public decimal Concurrency { get => concurrency; set { concurrency = Math.Clamp(decimal.Truncate(value), 1, 200); Refresh(); } }
     public bool IsPreview => preview;
@@ -73,7 +143,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool Connected => connected;
     public bool Busy => busy || deploying;
     public bool Idle => !Busy;
-    public bool CanConfigure => !busy && !testing && !deploying;
+    public bool CanConfigure => !busy && !testing && !deploying && !credentialBusy;
     public bool ShowStop => busy;
     public bool ShowStart => !busy;
     public bool ShowDrawer => drawer;
@@ -145,7 +215,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private async Task TestAsync()
     {
         testing = true; message = ""; Refresh();
-        try { version = await new SqlWorkloadBackend(Settings, password).TestAsync(); connected = true; Save(); }
+        try { version = await new SqlWorkloadBackend(Settings, password).TestAsync(); connected = true; await RememberSuccessfulPasswordAsync(); Save(); }
         catch (Exception ex) { message = SqlWorkloadBackend.Explain(ex); connected = false; }
         finally { testing = false; Refresh(); }
     }
@@ -164,6 +234,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             });
             version = await backend.TestAsync(deploymentCancellation.Token);
             connected = true;
+            await RememberSuccessfulPasswordAsync();
             Save();
         }
         catch (OperationCanceledException) { message = "Installation stopped. Some objects may already be installed. Click Install / update Stackish to retry."; }
@@ -217,7 +288,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private void Refresh()
     {
         PropertyChanged?.Invoke(this, new(null));
-        foreach (var command in new[] { DeployCommand, TestCommand, StartCommand, StopCommand, EditCommand, DrawerCommand, BaselineCommand, ClearBaselineCommand }) command.Refresh();
+        foreach (var command in new[] { LoadPasswordCommand, DeployCommand, TestCommand, StartCommand, StopCommand, EditCommand, DrawerCommand, BaselineCommand, ClearBaselineCommand }) command.Refresh();
     }
 
     // Used only by the separate offline screenshot project. No simulated mode in the app.
