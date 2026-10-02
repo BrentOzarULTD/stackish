@@ -46,10 +46,10 @@ def check(c):
         emit('release fixtures rolled back',identities_not_reseeded=True)
     # Rename one deployment-owned index inside a transaction to verify reuse by
     # structure, not by its name. Restore metadata by rollback, not a rebuild.
-    if scalar(c,"SELECT COUNT(*) FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Tags') AND name='IX_Stackish_Tags_TagName'"):
+    if scalar(c,"SELECT COUNT(*) FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Tags') AND name='TagName'"):
         query(c,'BEGIN TRANSACTION;')
         try:
-            query(c,"EXEC sys.sp_rename N'dbo.Tags.IX_Stackish_Tags_TagName',N'Stackish_TestEquivalentTagIndex',N'INDEX';")
+            query(c,"EXEC sys.sp_rename N'dbo.Tags.TagName',N'Stackish_TestEquivalentTagIndex',N'INDEX';")
             actions=[]
             for batch in batches(ROOT/'sql/indexes.sql'):
                 actions.extend(row for _,result in query(c,batch) for row in result)

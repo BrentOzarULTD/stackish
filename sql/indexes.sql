@@ -6,27 +6,29 @@
 -- on newly created indexes; an existing seek path can use base-row lookups. Full reversal
 -- of all key directions is equivalent (backward scan). Extra trailing keys are allowed.
 SET NOCOUNT ON;
-DECLARE @Indexes table(TableName sysname, IndexName sysname, KeysJson nvarchar(max), IncludesJson nvarchar(max));
-INSERT @Indexes VALUES
-(N'Votes',N'IX_Stackish_Votes_PostId_UserId',N'[{"column":"PostId","descending":0},{"column":"UserId","descending":0}]',N'["VoteTypeId"]'),
-(N'Posts',N'IX_Stackish_Posts_ParentId_PostTypeId',N'[{"column":"ParentId","descending":0},{"column":"PostTypeId","descending":0}]',N'["Score","OwnerUserId"]'),
-(N'Posts',N'IX_Stackish_Posts_OwnerUserId_PostTypeId',N'[{"column":"OwnerUserId","descending":0},{"column":"PostTypeId","descending":0}]',N'["Score","ParentId","Tags","CreationDate","LastActivityDate"]'),
-(N'Comments',N'IX_Stackish_Comments_PostId_CreationDate',N'[{"column":"PostId","descending":0},{"column":"CreationDate","descending":0},{"column":"Id","descending":0}]',N'["UserId","Score"]'),
-(N'Comments',N'IX_Stackish_Comments_UserId',N'[{"column":"UserId","descending":0}]',N'[]'),
-(N'Badges',N'IX_Stackish_Badges_UserId_Name',N'[{"column":"UserId","descending":0},{"column":"Name","descending":0}]',N'["Date"]'),
-(N'Badges',N'IX_Stackish_Badges_Name_Date',N'[{"column":"Name","descending":0},{"column":"Date","descending":1},{"column":"Id","descending":1}]',N'["UserId"]'),
-(N'PostLinks',N'IX_Stackish_PostLinks_PostId_RelatedPostId',N'[{"column":"PostId","descending":0},{"column":"RelatedPostId","descending":0},{"column":"LinkTypeId","descending":0}]',N'["CreationDate"]'),
-(N'PostHistory',N'IX_Stackish_PostHistory_PostId_CreationDate',N'[{"column":"PostId","descending":0},{"column":"CreationDate","descending":1},{"column":"Id","descending":1}]',N'[]'),
-(N'Tags',N'IX_Stackish_Tags_TagName',N'[{"column":"TagName","descending":0}]',N'["Count","ExcerptPostId","WikiPostId"]'),
-(N'Posts',N'IX_Stackish_Posts_PostTypeId_CreationDate',N'[{"column":"PostTypeId","descending":0},{"column":"CreationDate","descending":1},{"column":"Id","descending":1}]',N'["Tags","Score","OwnerUserId","ClosedDate","AcceptedAnswerId"]'),
-(N'Posts',N'IX_Stackish_Posts_PostTypeId_LastActivityDate',N'[{"column":"PostTypeId","descending":0},{"column":"LastActivityDate","descending":1},{"column":"Id","descending":1}]',N'[]'),
-(N'Users',N'IX_Stackish_Users_Reputation',N'[{"column":"Reputation","descending":1},{"column":"Id","descending":0}]',N'["DisplayName"]');
+DECLARE @Indexes table(IndexOrder int IDENTITY(1,1),TableName sysname, IndexName sysname, KeysJson nvarchar(max), IncludesJson nvarchar(max));
+INSERT @Indexes(TableName,IndexName,KeysJson,IncludesJson) VALUES
+(N'Votes',N'PostId_UserId',N'[{"column":"PostId","descending":0},{"column":"UserId","descending":0}]',N'["VoteTypeId"]'),
+(N'Posts',N'ParentId_PostTypeId',N'[{"column":"ParentId","descending":0},{"column":"PostTypeId","descending":0}]',N'["Score","OwnerUserId"]'),
+(N'Posts',N'OwnerUserId_PostTypeId',N'[{"column":"OwnerUserId","descending":0},{"column":"PostTypeId","descending":0}]',N'["Score","ParentId","Tags","CreationDate","LastActivityDate"]'),
+(N'Comments',N'PostId_CreationDate_Id',N'[{"column":"PostId","descending":0},{"column":"CreationDate","descending":0},{"column":"Id","descending":0}]',N'["UserId","Score"]'),
+(N'Comments',N'UserId',N'[{"column":"UserId","descending":0}]',N'[]'),
+(N'Badges',N'UserId_Name',N'[{"column":"UserId","descending":0},{"column":"Name","descending":0}]',N'["Date"]'),
+(N'Badges',N'Name_Date_Id',N'[{"column":"Name","descending":0},{"column":"Date","descending":1},{"column":"Id","descending":1}]',N'["UserId"]'),
+(N'PostLinks',N'PostId_RelatedPostId_LinkTypeId',N'[{"column":"PostId","descending":0},{"column":"RelatedPostId","descending":0},{"column":"LinkTypeId","descending":0}]',N'["CreationDate"]'),
+(N'PostHistory',N'PostId_CreationDate_Id',N'[{"column":"PostId","descending":0},{"column":"CreationDate","descending":1},{"column":"Id","descending":1}]',N'[]'),
+(N'Tags',N'TagName',N'[{"column":"TagName","descending":0}]',N'["Count","ExcerptPostId","WikiPostId"]'),
+(N'Posts',N'PostTypeId_CreationDate_Id',N'[{"column":"PostTypeId","descending":0},{"column":"CreationDate","descending":1},{"column":"Id","descending":1}]',N'["Tags","Score","OwnerUserId","ClosedDate","AcceptedAnswerId"]'),
+(N'Posts',N'PostTypeId_LastActivityDate_Id',N'[{"column":"PostTypeId","descending":0},{"column":"LastActivityDate","descending":1},{"column":"Id","descending":1}]',N'[]'),
+(N'Users',N'Reputation_Id',N'[{"column":"Reputation","descending":1},{"column":"Id","descending":0}]',N'["DisplayName"]');
 DECLARE @Table sysname,@Name sysname,@Keys nvarchar(max),@Includes nvarchar(max),@Object int,@Existing sysname,@Sql nvarchar(max),@KeySql nvarchar(max),@IncludeSql nvarchar(max);
-DECLARE indexes_to_check CURSOR LOCAL FAST_FORWARD FOR SELECT TableName,IndexName,KeysJson,IncludesJson FROM @Indexes;
+DECLARE @Number int=0,@Total int=(SELECT COUNT(*) FROM @Indexes);
+DECLARE indexes_to_check CURSOR LOCAL FAST_FORWARD FOR SELECT TableName,IndexName,KeysJson,IncludesJson FROM @Indexes ORDER BY IndexOrder;
 OPEN indexes_to_check;
 FETCH NEXT FROM indexes_to_check INTO @Table,@Name,@Keys,@Includes;
 WHILE @@FETCH_STATUS=0
 BEGIN
+ SET @Number+=1;
  SET @Object=OBJECT_ID(N'dbo.'+QUOTENAME(@Table));
  SET @Existing=NULL;
  SELECT TOP(1) @Existing=i.name FROM sys.indexes i
@@ -43,7 +45,10 @@ BEGIN
 
  ORDER BY i.index_id;
  IF @Existing IS NOT NULL
+ BEGIN
+  RAISERROR(N'Index %d of %d: reusing %s on dbo.%s.',0,1,@Number,@Total,@Existing,@Table) WITH NOWAIT;
   SELECT @Table AS TableName,@Existing AS IndexName,CONVERT(varchar(20),'Reused') AS DeploymentAction;
+ END
  ELSE
  BEGIN
   IF EXISTS(SELECT 1 FROM sys.indexes WHERE object_id=@Object AND name=@Name)
@@ -55,7 +60,9 @@ BEGIN
   SELECT @IncludeSql=STRING_AGG(CONVERT(nvarchar(max),QUOTENAME(value)),N',') FROM OPENJSON(@Includes);
   SET @Sql=N'CREATE NONCLUSTERED INDEX '+QUOTENAME(@Name)+N' ON dbo.'+QUOTENAME(@Table)+N' ('+@KeySql+N')'+CASE WHEN @IncludeSql IS NULL THEN N'' ELSE N' INCLUDE ('+@IncludeSql+N')' END+N';';
   -- No ONLINE, compression, filegroup, recovery, or other database setting assumptions.
+  RAISERROR(N'Index %d of %d: creating %s on dbo.%s.',0,1,@Number,@Total,@Name,@Table) WITH NOWAIT;
   EXEC sys.sp_executesql @Sql;
+  RAISERROR(N'Index %d of %d: created %s on dbo.%s.',0,1,@Number,@Total,@Name,@Table) WITH NOWAIT;
   SELECT @Table AS TableName,@Name AS IndexName,CONVERT(varchar(20),'Created') AS DeploymentAction;
  END;
  FETCH NEXT FROM indexes_to_check INTO @Table,@Name,@Keys,@Includes;
