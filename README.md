@@ -46,7 +46,7 @@ With the current source build, open the app, enter the server, database and SQL 
 
 **The app never creates or changes indexes.** You can run without the suggested indexes, choose a subset, or use your own tuning. Large reads and writes can be much slower without suitable indexes.
 
-The separate [index creation script](sql/indexes.sql) is **idempotent**: it reuses suitable existing indexes under any name and creates only missing ones. It does not drop, rebuild, or modify existing indexes. If one of its proposed names already exists with an incompatible definition, it reports a conflict instead of overwriting your work. Review the script and choose the indexes appropriate for your experiment; running the whole script creates all missing suggestions.
+The separate [index creation script](sql/indexes.sql) is **idempotent**: it reuses suitable existing indexes under any name and creates only missing ones. It does not drop, rebuild, or modify existing indexes. If one of its proposed names already exists with an incompatible definition, it reports a conflict instead of overwriting your work. Review the script and choose the indexes appropriate for your experiment; running the whole script creates all missing suggestions. New indexes are named only for their key columns (for example, `PostId_CreationDate_Id`). The Messages tab reports progress immediately, such as `Index 4 of 13`, including whether each index is being created or reused.
 
 With sqlcmd, select your database explicitly and supply the password at its prompt or through a local `SQLCMDPASSWORD` environment variable:
 
