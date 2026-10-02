@@ -39,14 +39,14 @@ public partial class MainWindow : Window
         if (closingAfterStop || DataContext is not MainViewModel vm) return;
         if (!vm.Busy) { await vm.StopAndCloseAsync(); return; }
         e.Cancel = true;
-        var dialog = new Window { Title = "Stop Stackish?", Width = 360, Height = 180, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var stop = new Button { Content = "Stop and quit" };
+        var dialog = new Window { Title = "Stop Stackish?", Width = vm.Deploying ? 460 : 360, Height = 180, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var stop = new Button { Content = vm.Deploying ? "Stop installation and quit" : "Stop and quit" };
         var stay = new Button { Content = "Keep running" };
         stop.Click += (_, _) => dialog.Close(true);
         stay.Click += (_, _) => dialog.Close(false);
         dialog.Content = new StackPanel { Margin = new(20), Spacing = 18, Children =
         {
-            new TextBlock { Text = "Stop the workload and quit?", FontSize = 17 },
+            new TextBlock { Text = vm.Deploying ? "Stop installation and quit?" : "Stop the workload and quit?", FontSize = 17 },
             new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 12, Children = { stay, stop } }
         }};
         if (await dialog.ShowDialog<bool>(this))

@@ -5,5 +5,6 @@
     <EmbeddedResource Include="../../workload/parameters.sql" LogicalName="Workload.parameters.sql" />
     <EmbeddedResource Include="../../sql/preflight.sql" LogicalName="Workload.preflight.sql" />
     <EmbeddedResource Include="../../sql/inventory.sql" LogicalName="Workload.inventory.sql" />
+    <EmbeddedResource Include="../../sql/**/*.sql" Exclude="../../sql/indexes.sql;../../sql/preflight.sql;../../sql/inventory.sql" LogicalName="Deployment/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

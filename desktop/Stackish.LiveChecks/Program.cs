@@ -1,11 +1,12 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
 using Stackish.Core;
 
 // Maintainer evidence client, not part of the packaged desktop app or offline CI.
 if (!args.Contains("--allow-mutations"))
 {
-    Console.Error.WriteLine("Bounded runs commit real workload writes. Pass --allow-mutations on an authorized training copy. Optional: --seconds 60 --workers 4 --runs 2 --trust-certificate. For a continuous check: --seconds 1800 --runs 1.");
+    Console.Error.WriteLine("Bounded runs commit workload writes; --deploy-only installs modules twice without running a workload. Pass --allow-mutations on an authorized training copy. Optional: --seconds 60 --workers 4 --runs 2 --trust-certificate. For a continuous check: --seconds 1800 --runs 1.");
     return 2;
 }
 int Option(string name, int fallback, int min, int max)
@@ -25,6 +26,37 @@ try
     int seconds = Option("--seconds", 60, 10, 86400), workers = Option("--workers", 4, 1, 16), runs = Option("--runs", 2, 1, 2);
     var settings = new ConnectionSettings(Env("STACKISH_SERVER"), Env("STACKISH_DATABASE"), Env("STACKISH_USER"), args.Contains("--trust-certificate"));
     var backend = new SqlWorkloadBackend(settings, Env("SQLCMDPASSWORD"));
+    if (args.Contains("--deploy-only"))
+    {
+        var builder = new SqlConnectionStringBuilder { DataSource = settings.Server,
+            InitialCatalog = settings.Database, UserID = settings.Username, Password = Env("SQLCMDPASSWORD"),
+            Encrypt = SqlConnectionEncryptOption.Mandatory, TrustServerCertificate = settings.TrustCertificate };
+        await using var audit = new SqlConnection(builder.ConnectionString);
+        await audit.OpenAsync();
+        async Task<string> IndexFingerprint()
+        {
+            await using var command = new SqlCommand("""
+                SELECT i.object_id,i.index_id,i.name,i.type,i.is_unique,i.is_disabled,i.filter_definition,
+                       c.column_id,c.key_ordinal,c.is_descending_key,c.is_included_column
+                FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id
+                LEFT JOIN sys.index_columns c ON c.object_id=i.object_id AND c.index_id=i.index_id
+                ORDER BY i.object_id,i.index_id,c.index_column_id FOR JSON PATH
+                """, audit);
+            await using var reader = await command.ExecuteReaderAsync();
+            var result = new System.Text.StringBuilder();
+            while (await reader.ReadAsync()) result.Append(reader.GetString(0));
+            return result.ToString();
+        }
+        string before = await IndexFingerprint();
+        for (int attempt = 1; attempt <= 2; attempt++)
+        {
+            await backend.DeployAsync();
+            Console.WriteLine("Deployment " + attempt + ": readiness " + await backend.TestAsync());
+            if (before != await IndexFingerprint()) throw new InvalidOperationException("Module deployment changed indexes.");
+        }
+        Console.WriteLine("PASS: app backend deployed twice, inventory passed, all existing index definitions unchanged. No workload executed.");
+        return 0;
+    }
     Console.WriteLine("Readiness: " + await backend.TestAsync());
     var config = new RunConfiguration(settings, workers, WorkloadFiles.Version);
     var measured = new EvidenceBackend(backend);

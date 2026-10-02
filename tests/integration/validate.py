@@ -24,9 +24,10 @@ def static():
     assert set(found)==set(CONTRACTS),set(CONTRACTS)^set(found)
     deployed='\n'.join(batches(ROOT/'sql/deploy.sql'))
     assert deployed.index('FUNCTION dbo.Stackish_SplitTags') < deployed.index('PROCEDURE dbo.')
+    assert 'sql/indexes.sql' not in (ROOT/'sql/deploy.sql').read_text()
     names=re.findall(r'CREATE OR ALTER (?:PROCEDURE|FUNCTION) dbo\.(Stackish_\w+)',deployed,re.I)
     assert sorted(names)==sorted(CONTRACTS)
-    # Deployment may add missing indexes, but never changes data, tables or settings.
+    # Module deployment must not change indexes, data, tables or settings.
     for part in deployed.split('CREATE OR ALTER')[0], (ROOT/'sql/inventory.sql').read_text():
         assert not re.search(r'\b(?:UPDATE|DELETE|INSERT\s+(?:INTO\s+)?dbo\.|ALTER DATABASE|CREATE TABLE)\b',part,re.I)
     emit('offline contracts and deployment inventory', objects=len(found))
@@ -75,16 +76,7 @@ def deploy(c):
                         emit('supporting index',table=table,index=index,action=action)
         after=fingerprint(c)
         assert after[0]==before[0] and after[2:]==before[2:],'Deployment changed base columns/constraints/settings'
-        if attempt==1:
-            import json
-            old_indexes=json.loads(before[1]);new_indexes=json.loads(after[1])
-            assert all(index in new_indexes for index in old_indexes),'Deployment removed or changed an existing index'
-            added=[index for index in new_indexes if index not in old_indexes]
-            assert all(index['name'].startswith('IX_Stackish_') for index in added),'Unexpected index addition'
-            emit('index deployment',added_indexes=len({(i['object_id'],i['index_id']) for i in added}))
-            before=after
-        else:
-            assert after==before,'Repeat deployment changed index metadata'
+        assert after==before,'Module deployment changed base schema, indexes, constraints or settings'
         metadata(c)
         emit('deployment',attempt=attempt,base_columns_constraints_settings_unchanged=True,existing_indexes_preserved=True)
 

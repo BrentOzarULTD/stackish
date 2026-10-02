@@ -4,6 +4,8 @@ Stackish targets SQL Server 2025 (major version 17+) and compatibility level 170
 
 ## Select the database and deploy
 
+Desktop users can enter connection details and click **Install / update Stackish**. This installs procedures/functions only and replaces existing module definitions, including tuning edits. Use **Test connection** for subsequent runs to preserve those edits. The app never runs index DDL. The command-line equivalent follows.
+
 Choose the database explicitly in every connection. Do not rely on the login's default database. In SSMS, verify the selected database before running anything. In SQLQueryStress, set the main and parameter connections to the same intended database. Check `SELECT DB_NAME(), SERVERPROPERTY('ProductVersion');`.
 
 From the repository root, using SQLCMD mode:
@@ -19,11 +21,20 @@ Use your connection's appropriate TLS/certificate options. No endpoint, password
 [sql/deploy.sql](../sql/deploy.sql) is the complete entry point. Relative `:r` paths require the repository root as working directory. It:
 
 1. Runs [preflight](../sql/preflight.sql), rejecting system databases, older engines/compatibility, missing or incompatible base columns, missing Id primary keys, extra required columns that prevent inserts, and incorrect required lookup ID/label pairs.
-2. Checks supporting indexes and creates missing access paths, reusing suitable existing indexes under any name. Initial builds on the large restore take time, disk and log space and may block callers; deploy before starting a workload.
-3. Creates/alters `Stackish_SplitTags` first, then every public procedure.
-4. Checks the exact [43-object inventory](../sql/inventory.sql), reporting missing, extra, or wrong-kind `dbo.Stackish_` objects. It never drops extras.
+2. Creates/alters `Stackish_SplitTags` first, then every public procedure.
+3. Checks the exact [43-object inventory](../sql/inventory.sql), reporting missing, extra, or wrong-kind `dbo.Stackish_` objects. It never drops extras.
 
-Deployment is repeatable and does not seed/repair data, change base columns/constraints or replace existing indexes, or change database settings. `CREATE OR ALTER` preserves existing module permissions. The per-module ANSI_NULLS/QUOTED_IDENTIFIER settings are module creation settings, not database changes. A deployment failure stops the script; earlier indexes or module definitions may already have been installed. Resolve the reported problem and rerun the whole entry point. No all-database transaction or schema migration is implied.
+Deployment is repeatable and does not seed/repair data, change base columns/constraints or replace existing indexes, or change database settings. `CREATE OR ALTER` preserves existing module permissions. The per-module ANSI_NULLS/QUOTED_IDENTIFIER settings are module creation settings, not database changes. A deployment failure stops the script; earlier module definitions may already have been installed. Resolve the reported problem and rerun the whole entry point. No all-database transaction or schema migration is implied.
+
+## Optional indexes
+
+Review [sql/indexes.sql](../sql/indexes.sql) separately. Run the whole idempotent script to create all missing suggestions, or select only the indexes you want for your experiment. It reuses suitable existing indexes under any name and never replaces existing definitions. Conflicting proposed names produce an error. It does not run as part of app or CLI module deployment.
+
+```sh
+sqlcmd -S <server> -U <login> -d <database> -b -i sql/indexes.sql
+```
+
+You may also run this script in SSMS against the explicitly selected database. Index builds can take time, disk and log space and block callers; finish them before workload measurements. Indexes are not required by the app's readiness check.
 
 ## Validate before starting load
 
@@ -70,4 +81,4 @@ To stop, click Cancel in the SQLQueryStress window and wait for execution/rollba
 
 Deployment does not reset content. Stop all callers, allow transactions to finish, and have the operator restore the chosen clean backup into the intended disposable database using normal SQL Server restore procedures. Verify server, database name, backup dataset date and file paths first. Restoring over an existing database, dropping one, or replacing it requires explicit authorization; no reset script performs these actions automatically.
 
-After an authorized restore, verify compatibility without changing it, rerun `sql/deploy.sql`, then smoke/edge checks and parameter validation. The entry point recreates missing supporting indexes and reuses suitable existing ones; it does not copy every research index. Record which indexes were created/reused. Tag/body searches and global aggregations can remain costly; deployment does not attempt to eliminate every scan. Clear any desktop baseline after a restore.
+After an authorized restore, verify compatibility without changing it and install the procedures/functions again using the app or `sql/deploy.sql`. Maintainers can then run smoke/edge checks and parameter validation. If wanted, run the separate optional index script; it recreates missing suggestions and reuses suitable existing indexes. Record which indexes were created/reused. Tag/body searches and global aggregations can remain costly; deployment does not attempt to eliminate every scan. Clear any desktop baseline after a restore.

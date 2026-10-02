@@ -1,13 +1,14 @@
 name: Desktop builds
 on:
   pull_request:
-    paths: ['desktop/**', 'workload/**', 'sql/preflight.sql', 'sql/inventory.sql', '.github/workflows/desktop.yml']
+    paths: ['desktop/**', 'workload/**', 'sql/**', '.github/workflows/desktop.yml']
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest

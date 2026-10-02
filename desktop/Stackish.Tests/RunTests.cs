@@ -32,6 +32,20 @@ public sealed class RunTests
     }
 
     [Fact]
+    public void AppDeploymentContainsAllModulesInDependencyOrderAndNoIndexDdl()
+    {
+        var batches = DatabaseDeployment.Batches().ToArray();
+        Assert.Equal("preflight.sql", batches.First().Source);
+        Assert.Equal("inventory.sql", batches.Last().Source);
+        string sql = string.Join("\n", batches.Select(b => b.Sql));
+        Assert.Equal(43, System.Text.RegularExpressions.Regex.Matches(sql,
+            @"CREATE OR ALTER (?:PROCEDURE|FUNCTION) dbo\.Stackish_", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Count);
+        Assert.True(sql.IndexOf("FUNCTION dbo.Stackish_SplitTags", StringComparison.Ordinal) < sql.IndexOf("PROCEDURE dbo.", StringComparison.Ordinal));
+        Assert.DoesNotMatch(@"(?im)^\s*(?:GO\s*$|:r|:ON)|\b(?:CREATE|ALTER|DROP)\s+(?:NONCLUSTERED\s+)?INDEX\b", sql);
+        Assert.DoesNotContain(typeof(DatabaseDeployment).Assembly.GetManifestResourceNames(), n => n.EndsWith("indexes.sql"));
+    }
+
+    [Fact]
     public void ShortAndZeroBaselinesDoNotProduceInventedPercentages()
     {
         Assert.Null(Comparison.Between(Snapshot(100, 3), Snapshot(200, 30)));

@@ -1,4 +1,5 @@
--- Initial-deployment access paths, explicitly authorized for the desktop/release wave.
+-- Optional access paths: run separately from the app or sql/deploy.sql.
+-- Review these suggestions and select the indexes appropriate for your experiment.
 -- Creates only missing nonunique indexes. Never drops/rebuilds existing indexes or edits data.
 -- A suitable enabled, unfiltered rowstore index under ANY name is reused when its
 -- leading keys/directions satisfy the specification. INCLUDE columns improve coverage
