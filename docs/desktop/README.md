@@ -1,8 +1,8 @@
-# Stackish desktop — before and after tuning
+# Run the Stackish desktop workload
 
-The first desktop version targets Windows and macOS. It uses the existing stored procedures and the integrated workload from PR #6. The app does not install database objects, change indexes, or restore data; the separate deployment entry point now installs missing [supporting indexes](../indexes.md). Linux packaging is deferred.
+The first desktop version targets Windows and macOS. Use it to generate ongoing activity during migration rehearsals or compare before/after tuning runs. The app does not install database objects, change indexes, or restore data; the separate deployment entry point now installs missing supporting indexes. Linux packaging is deferred.
 
-For a packaged review build, unzip the archive and open `Stackish.app` on Mac, or extract the whole Windows archive and open `Stackish.exe` inside its folder. Keep the Windows companion files together. The packages include .NET; an SDK is only needed to build from source.
+Download an unsigned build from [GitHub Releases](https://github.com/BrentOzarULTD/stackish/releases/tag/v0.1.0-preview.1). Unzip the archive and open `Stackish.app` on Mac, or extract the whole Windows archive and open `Stackish.exe` inside its folder. Keep the Windows companion files together. The packages include .NET; an SDK is only needed to build from source.
 
 ## Run, tune, compare
 
@@ -47,19 +47,9 @@ macOS output: `desktop/artifacts/<runtime>/Stackish.app`. Windows output: `deskt
 
 Nonsecret connection settings and one baseline (including sampled IDs, measurements, and error summaries) are stored under the current user's local application-data directory in `Stackish/state.json`. It contains no password. A failed save is reported in the app. Do not commit local state or real connection details.
 
-## Design and implementation
+## Keyboard shortcuts
 
-The [original Claude handoff](design-reference/claude-handoff.md) and its Windows/Mac reference screenshots are design source material. The implemented change is a before/after throughput chart and baseline controls. Additional first-version choices: fixed concurrency per run, password persistence omitted, native window chrome, no automatic database installation, and cancellation remains in Stopping until active work actually finishes. The app does not claim cancellation/rollback finishes at an exact deadline.
-
-The interface uses Avalonia with bundled IBM Plex fonts and their OFL license. It retains the paper background, restrained red branding, compact control rail, six metrics, and an errors/outcomes drawer. Keyboard shortcuts: Windows F5 / Shift+F5; macOS Command+R / Command+period; Escape closes the drawer. Closing during a run asks to stop and quit.
-
-The separate `Stackish.Preview` project renders illustrative screenshots from actual Avalonia controls; it has no database connection and never runs a workload:
-
-```sh
-dotnet run --project desktop/Stackish.Preview -- /tmp/stackish-preview
-```
-
-The core tests cover SQL readiness batch boundaries, stop during preparation, bucket-boundary accounting, equal-duration comparisons, incompatible settings, zero baselines, error/no-op accounting, persistence, replayed operation choices, stop/drain behavior and cancellation. These are correctness tests with an in-memory backend, not evidence of SQL Server throughput. See [validation](validation.md) for what actually ran.
+Windows: F5 starts and Shift+F5 stops. macOS: Command+R starts and Command+period stops. Escape closes the errors/outcomes drawer. Closing during a run asks to stop and quit.
 
 ## Screenshots for review
 
@@ -78,3 +68,11 @@ dotnet run --project desktop/Stackish.LiveChecks -c Release -- --allow-mutations
 ```
 
 Use `--trust-certificate` only when that is the intended certificate policy for your training server. The test commits real mutations. It requests Stop after the measured duration, drains/cancels exactly like the app, and finishes before starting the second run. Ctrl+C requests Stop; wait for it to finish. Its temporary baseline file is removed after validation. Output can contain nonsecret server/database/login settings and database error messages; keep raw evidence outside the repository. There is no tuning between these two runs, so a difference is a repeat-run observation, not proof of a tuning improvement.
+
+For a longer single continuous run, use the same evidence client with an explicit duration and run count:
+
+```sh
+dotnet run --project desktop/Stackish.LiveChecks -c Release -- --allow-mutations --seconds 1800 --runs 1 --workers 8
+```
+
+`--seconds` is the measured duration per run (10–86,400 seconds); `--runs` accepts one or two and defaults to two. Setup and stopping time are additional. The normal desktop app still runs until you press Stop. The continuous check commits writes and includes expensive searches; its duration is not a guarantee of uniform throughput or uninterrupted successful writes.

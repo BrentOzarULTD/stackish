@@ -27,7 +27,7 @@ If parameter selection reports no eligible rows, rerun it before starting. Do no
 
 ## What the default does
 
-Each invocation randomly chooses **one public procedure call**. The intended mix is **55% reads / 45% writes**, including 3% expensive reads and 2% hot-counter calls. Short runs fluctuate; these are probabilities, not exact quotas. Expensive operations can consume most of the server's resources and occupy threads for much longer. See the [mix and validation boundaries](../docs/workload.md).
+Each invocation randomly chooses **one public procedure call**. The intended mix is **55% reads / 45% writes**, including 3% expensive reads and 2% hot-counter calls. Short runs fluctuate; these are probabilities, not exact quotas. Expensive operations can consume most of the server's resources and occupy threads for much longer.
 
 The parameter query runs at setup and returns up to 512 packaged target rows. SQLQueryStress cycles those rows across its threads. The package keeps related IDs together, including question/answer/owner tuples; the main query unpacks only the chosen operation's targets. No JSON editing is needed. There is no permanent dispatcher, ID-pool table, new index, or server-side workload loop.
 

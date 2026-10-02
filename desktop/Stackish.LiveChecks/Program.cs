@@ -5,7 +5,7 @@ using Stackish.Core;
 // Maintainer evidence client, not part of the packaged desktop app or offline CI.
 if (!args.Contains("--allow-mutations"))
 {
-    Console.Error.WriteLine("Two bounded runs commit real workload writes. Pass --allow-mutations on an authorized training copy. Optional: --seconds 60 --workers 4 --trust-certificate.");
+    Console.Error.WriteLine("Bounded runs commit real workload writes. Pass --allow-mutations on an authorized training copy. Optional: --seconds 60 --workers 4 --runs 2 --trust-certificate. For a continuous check: --seconds 1800 --runs 1.");
     return 2;
 }
 int Option(string name, int fallback, int min, int max)
@@ -22,7 +22,7 @@ bool interrupted = false;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; interrupted = true; active?.Stop(); };
 try
 {
-    int seconds = Option("--seconds", 60, 10, 300), workers = Option("--workers", 4, 1, 16);
+    int seconds = Option("--seconds", 60, 10, 86400), workers = Option("--workers", 4, 1, 16), runs = Option("--runs", 2, 1, 2);
     var settings = new ConnectionSettings(Env("STACKISH_SERVER"), Env("STACKISH_DATABASE"), Env("STACKISH_USER"), args.Contains("--trust-certificate"));
     var backend = new SqlWorkloadBackend(settings, Env("SQLCMDPASSWORD"));
     Console.WriteLine("Readiness: " + await backend.TestAsync());
@@ -31,7 +31,7 @@ try
     var state = new StateStore(temporary);
     SavedBaseline? baseline = null;
     bool failed = false;
-    for (int iteration = 1; iteration <= 2 && !interrupted; iteration++)
+    for (int iteration = 1; iteration <= runs && !interrupted; iteration++)
     {
         active = new WorkloadRunner(measured, config, baseline?.Targets);
         var setup = Stopwatch.StartNew();
