@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create self-contained Windows or macOS review builds. Mac bundles are ad-hoc signed and their extracted ZIP contents verified. No publishing."""
+"""Create self-contained builds and verify their extracted ZIPs. Mac signing defaults to ad-hoc; Developer ID signing is optional. No notarization or publishing."""
 import argparse
 import os
 from pathlib import Path
@@ -13,7 +13,11 @@ root = Path(__file__).resolve().parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--runtime', choices=['win-x64', 'osx-x64', 'osx-arm64'], required=True)
 parser.add_argument('--output', type=Path, default=root/'artifacts')
+parser.add_argument('--signing-identity', help='Mac Developer ID Application certificate name; omit for an ad-hoc review build')
 args = parser.parse_args()
+if args.signing_identity and (not args.runtime.startswith('osx') or
+                             not args.signing_identity.startswith('Developer ID Application: ')):
+    parser.error('--signing-identity requires a Mac runtime and a Developer ID Application certificate')
 if args.runtime.startswith('osx') and platform.system() != 'Darwin':
     parser.error('Mac packaging requires macOS for signing and ZIP verification')
 output = args.output.resolve()/args.runtime
@@ -38,11 +42,17 @@ if args.runtime.startswith('osx'):
                       'CFBundleVersion': '1', 'NSHighResolutionCapable': True}, stream)
     # Sign nested files first, then seal the complete bundle. The .NET apphost's
     # original signature predates Info.plist and does not sign this app bundle.
+    signing = ['codesign', '--force', '--sign', args.signing_identity or '-']
+    if args.signing_identity:
+        signing += ['--timestamp', '--options', 'runtime']
     for item in sorted(executable.rglob('*')):
         if item.is_file() and item != executable/'Stackish':
-            subprocess.run(['codesign', '--force', '--sign', '-', str(item)],
+            subprocess.run(signing + [str(item)],
                            check=True, stdout=subprocess.DEVNULL)
-    subprocess.run(['codesign', '--force', '--sign', '-', str(app)], check=True)
+    bundle_signing = signing.copy()
+    if args.signing_identity:
+        bundle_signing += ['--entitlements', str(root/'macos.entitlements')]
+    subprocess.run(bundle_signing + [str(app)], check=True)
     archive = output/('Stackish-'+args.runtime+'.zip')
     if archive.exists():
         archive.unlink()
