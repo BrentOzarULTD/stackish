@@ -26,39 +26,41 @@ If you use an AI tool, start by asking it to inspect the repository and your res
 
 - **SQL Server 2025 or later**, with the selected database at **compatibility level 170 or later**. The Windows/Mac app can connect to a separate SQL Server machine.
 - A disposable restore of the **2024-04 Stack Overflow database**, available through [Brent's database download page](https://www.brentozar.com/archive/2015/10/how-to-download-the-stack-overflow-database-via-bittorrent/). The data and backup are not included in this repository. Other exports may differ; the 2024-04 copy is the release validation target.
-- Space for the restored database, ongoing writes, and index creation. Deployment creates missing supporting indexes; on our 2024-04 test copy, the 13 added indexes occupied about **24.6 GiB**, in addition to the database. Index builds also need working space and transaction-log capacity.
-- A database login with permission to deploy objects and create indexes. For a simple isolated lab, a SQL login mapped to a database user in `db_owner` can deploy and run Stackish. The app uses SQL authentication; it has no Windows-integrated or Entra sign-in option.
-- The **sqlcmd** command-line tool for database deployment. To run the app from source, install the **.NET 10 SDK** on Windows or Mac. Packaged builds include their own .NET runtime.
+- Space for the restored database, ongoing writes, and index creation. Optional supporting indexes occupied about **24.6 GiB** on our 2024-04 test copy. If you choose to create them, allow additional working space and transaction-log capacity.
+- A database login with permission to deploy procedures and functions. Creating optional indexes requires additional permissions. For a simple isolated lab, a SQL login mapped to a database user in `db_owner` can deploy and run Stackish. The app uses SQL authentication; it has no Windows-integrated or Entra sign-in option.
+- Packaged builds include their own .NET runtime and procedure/function installer. **sqlcmd** is only needed for command-line deployment or the optional index script. Building from source requires the **.NET 10 SDK**.
 
 The workload commits real changes. Use a lab copy you are comfortable restoring. Keep a clean backup for repeated experiments.
 
-## Deploy the database objects
+## Prepare the database
 
-Clone your fork and open a terminal in the repository root—the folder containing this README. Restore the database using your normal SQL Server backup/restore process first. Stackish does not create the database or import the public data.
+Restore your disposable database first. Stackish does not restore backups, import data, or change database settings. Use SQL Server 2025 or later and compatibility level 170 or later.
 
-Check the server and selected database before deployment:
+Open the app, enter the server, database and SQL login, then click **Install / update Stackish**. The app checks the required schema and lookup values, installs **42 stored procedures and one function** in dependency order, and verifies the inventory. It shows progress and reports failures. No repository checkout or sqlcmd installation is needed for this step.
 
-```sql
-SELECT DB_NAME() AS DatabaseName,
-       SERVERPROPERTY('ProductVersion') AS EngineVersion,
-       compatibility_level
-FROM sys.databases
-WHERE database_id = DB_ID();
+**Install / update replaces existing Stackish procedure/function definitions**, including your tuning changes, and clears the app's saved baseline. Use it for a fresh restore or a deliberate update. For an already prepared database, use **Test connection** and start the workload; that check changes nothing. If installation fails or is interrupted, resolve the reported problem and retry. Completed batches remain installed, and rerunning is safe. Stop other callers before updating procedures.
+
+### Optional index preparation
+
+**The app never creates or changes indexes.** You can run without the suggested indexes, choose a subset, or use your own tuning. Large reads and writes can be much slower without suitable indexes.
+
+The separate [index creation script](sql/indexes.sql) is **idempotent**: it reuses suitable existing indexes under any name and creates only missing ones. It does not drop, rebuild, or modify existing indexes. If one of its proposed names already exists with an incompatible definition, it reports a conflict instead of overwriting your work. Review the script and choose the indexes appropriate for your experiment; running the whole script creates all missing suggestions.
+
+With sqlcmd, select your database explicitly and supply the password at its prompt or through a local `SQLCMDPASSWORD` environment variable:
+
+```sh
+sqlcmd -S YOUR_SERVER -U YOUR_LOGIN -d YOUR_DATABASE -b -i sql/indexes.sql
 ```
 
-Set up compatibility level 170 or later yourself if needed. Stackish checks the setting but never changes it.
+You can also open `sql/indexes.sql` in SSMS, select the intended database, and execute it there. Initial creation can take substantial time and disk/log space; finish index preparation before measuring workload performance. Use appropriate TLS/certificate options for your server.
 
-Run the following from the repository root, replacing the server, login, and database placeholders. With SQL authentication, let sqlcmd prompt for the password, or supply `SQLCMDPASSWORD` through your local environment; do not put a password in the command or in a repository file.
+For command-line procedure/function installation, run from the repository root:
 
 ```sh
 sqlcmd -S YOUR_SERVER -U YOUR_LOGIN -d YOUR_DATABASE -b -i sql/deploy.sql
 ```
 
-Use the TLS/certificate options appropriate for your server. In particular, a locally trusted/self-signed certificate may require an explicit trust setting in your client. Select the database with `-d`; do not depend on the login's default database.
-
-The entry point checks the engine, compatibility, required base tables/columns, and lookup values. It then creates missing supporting indexes, installs the tag parser before dependent objects, and creates or updates **42 stored procedures and one function**. A final inventory check reports missing or unexpected Stackish objects. Initial index creation on the large dataset can take time and block callers, so deploy before starting the workload.
-
-You can rerun the same deployment command. It reuses suitable existing indexes and does not repair imported data, change base tables or constraints, change database settings, or reset activity from previous runs. A failed deployment may have installed some objects already; fix the reported problem and rerun it. Deployment can overwrite your edits to Stackish procedures, so commit tuning or migration changes to your fork first.
+This entry point installs the same modules as the app and **does not run the index script**. Neither installer repairs imported data, changes base tables/constraints or database settings, or resets workload activity.
 
 ## Open the app
 
@@ -79,7 +81,7 @@ dotnet run --project desktop/Stackish.Desktop -c Release
 For the Windows preview, extract the entire ZIP and open `Stackish.exe`; keep its companion files together. Mac packages generated by the build workflow are developer artifacts, not verified public installers. Native Windows and Intel Mac GUI validation remains outstanding. Linux packaging is not included.
 
 1. Enter the SQL Server, database name, username, and password. Choose **Trust server certificate** only if that matches your lab's certificate policy.
-2. Click **Test connection**. This checks the database requirements and installed objects; it does not deploy or repair them.
+2. Click **Test connection**. This checks database requirements and installed objects without changing them. On a fresh restore, click **Install / update Stackish** first.
 3. Choose the number of **Concurrent operations**. Start small—four is a reasonable first check—and click **Start workload**.
 4. Check completed calls, successful writes, and **Errors & outcomes**. A successful connection check alone does not prove the workload is running successfully.
 5. Leave the app open and the computer awake while you want activity. It runs until you stop it; no SQL batches, parameter mappings, or additional runner instances are needed.

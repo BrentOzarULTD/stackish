@@ -11,6 +11,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private readonly DispatcherTimer timer;
     private WorkloadRunner? runner;
     private Task? runTask;
+    private Task? deploymentTask;
+    private CancellationTokenSource? deploymentCancellation;
+    private bool deploying;
+    private string deploymentProgress = "";
     private RunSnapshot? run;
     private SavedBaseline? baseline;
     private string[] targets = [];
@@ -23,13 +27,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public MainViewModel(StateStore? stateStore = null)
     {
         store = stateStore ?? new StateStore();
-        TestCommand = new(() => _ = TestAsync(), () => !busy && !testing);
-        StartCommand = new(() => _ = StartAsync(), () => connected && !busy && !testing);
+        TestCommand = new(() => _ = TestAsync(), () => CanConfigure);
+        DeployCommand = new(() => deploymentTask = DeployAsync(), () => CanConfigure);
+        StartCommand = new(() => _ = StartAsync(), () => connected && CanConfigure);
         StopCommand = new(Stop, () => busy && !stopping);
-        EditCommand = new(() => { connected = false; Refresh(); }, () => !busy && !testing);
+        EditCommand = new(() => { connected = false; Refresh(); }, () => CanConfigure);
         DrawerCommand = new(() => { drawer = !drawer; Refresh(); });
-        BaselineCommand = new(UseBaseline, () => !busy && run is { Finished: true, Failed: false, Completed: > 0, Seconds: >= 5 } && run.Id != baseline?.Run.Id);
-        ClearBaselineCommand = new(() => { baseline = null; Save(); Refresh(); }, () => !busy && baseline != null);
+        BaselineCommand = new(UseBaseline, () => CanConfigure && run is { Finished: true, Failed: false, Completed: > 0, Seconds: >= 5 } && run.Id != baseline?.Run.Id);
+        ClearBaselineCommand = new(() => { baseline = null; Save(); Refresh(); }, () => CanConfigure && baseline != null);
         try
         {
             if (store.Load() is { } saved)
@@ -48,6 +53,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public ActionCommand TestCommand { get; }
+    public ActionCommand DeployCommand { get; }
+    public bool Deploying => deploying;
+    public string DeploymentProgress => deploymentProgress;
     public ActionCommand StartCommand { get; }
     public ActionCommand StopCommand { get; }
     public ActionCommand EditCommand { get; }
@@ -63,9 +71,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool IsPreview => preview;
     public bool ShowConnection => !connected;
     public bool Connected => connected;
-    public bool Busy => busy;
-    public bool Idle => !busy;
-    public bool CanConfigure => !busy && !testing;
+    public bool Busy => busy || deploying;
+    public bool Idle => !Busy;
+    public bool CanConfigure => !busy && !testing && !deploying;
     public bool ShowStop => busy;
     public bool ShowStart => !busy;
     public bool ShowDrawer => drawer;
@@ -78,10 +86,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string StartLabel => run == null ? "▶  Start workload" : "▶  Start new run";
     public string StopLabel => stopping ? "Stopping…" : "■  Stop";
     public string ActionHint => busy ? (stopping ? "Finishing active calls…" : "Stop, tune in SSMS, then run again") : connected ? "The first stopped run becomes your baseline" : "Connect to a database first";
-    public string Status => testing ? "Connecting" : stopping ? "Stopping" : busy ? run == null ? "Preparing" : "Running" : run?.Failed == true ? "Failed" : run != null ? "Stopped" : connected ? "Ready" : "Not connected";
+    public string Status => deploying ? "Installing Stackish" : testing ? "Connecting" : stopping ? "Stopping" : busy ? run == null ? "Preparing" : "Running" : run?.Failed == true ? "Failed" : run != null ? "Stopped" : connected ? "Ready" : "Not connected";
     public string StatusColor => run?.Failed == true && !busy ? "#B3261E" : stopping ? "#9A5B00" : busy ? "#145C38" : "#1E1F23";
     public string StatusBackground => run?.Failed == true && !busy ? "#FBE9E7" : stopping ? "#FBF0DC" : busy ? "#E7F3EC" : "#F2F0EC";
-    public string StatusDetail => stopping ? $"No new calls. Finishing {run?.Active ?? 0} active calls; cancel requested after 30 seconds." : busy ? run == null ? "Selecting eligible targets and opening connections…" : $"{(int)concurrency} concurrent operations · {(baseline == null ? "recording first run" : "comparing with your baseline")}" : run?.Failure ?? (run != null ? "Measurement stopped. The summary is preserved until your next run." : connected ? $"{(int)concurrency} concurrent operations · runs until you stop it" : "Enter connection details above, then test the connection.");
+    public string StatusDetail => deploying ? deploymentProgress : stopping ? $"No new calls. Finishing {run?.Active ?? 0} active calls; cancel requested after 30 seconds." : busy ? run == null ? "Selecting eligible targets and opening connections…" : $"{(int)concurrency} concurrent operations · {(baseline == null ? "recording first run" : "comparing with your baseline")}" : run?.Failure ?? (run != null ? "Measurement stopped. The summary is preserved until your next run." : connected ? $"{(int)concurrency} concurrent operations · runs until you stop it" : "Enter connection details above, then test the connection.");
     public string Elapsed => run == null ? "00:00:00" : Duration(run.Seconds, true);
     public string Completed => run?.Completed.ToString("N0") ?? "—";
     public string ReadWriteDetail => run == null ? "" : $"{run.Reads:N0} reads · {run.Writes:N0} writes";
@@ -140,6 +148,26 @@ public sealed class MainViewModel : INotifyPropertyChanged
         catch (Exception ex) { message = SqlWorkloadBackend.Explain(ex); connected = false; }
         finally { testing = false; Refresh(); }
     }
+    private async Task DeployAsync()
+    {
+        deploying = true; connected = false; message = "";
+        // A partial update also invalidates comparisons with previously tuned modules.
+        baseline = null; run = null; targets = []; Save();
+        deploymentProgress = "Checking database…";
+        deploymentCancellation = new(); Refresh();
+        try
+        {
+            var progress = new Progress<string>(text => { deploymentProgress = text; Refresh(); });
+            var backend = new SqlWorkloadBackend(Settings, password);
+            await backend.DeployAsync(progress, deploymentCancellation.Token);
+            version = await backend.TestAsync(deploymentCancellation.Token);
+            connected = true;
+            Save();
+        }
+        catch (OperationCanceledException) { message = "Installation stopped. Some objects may already be installed. Click Install / update Stackish to retry."; }
+        catch (Exception ex) { message = "Installation did not finish. " + SqlWorkloadBackend.Explain(ex) + " Some objects may already be installed; resolve the error and retry."; }
+        finally { deploying = false; deploymentCancellation.Dispose(); deploymentCancellation = null; Refresh(); }
+    }
     public async Task CopyErrorsAsync(Func<string, Task> writeClipboard)
     {
         try { await writeClipboard(ErrorText); }
@@ -173,7 +201,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         finally { busy = false; stopping = false; runner = null; Save(); Refresh(); }
     }
     private void Stop() { if (runner == null) return; stopping = true; runner.Stop(); Refresh(); }
-    public async Task StopAndCloseAsync() { Stop(); if (runTask != null) await runTask; timer.Stop(); }
+    public async Task StopAndCloseAsync() { deploymentCancellation?.Cancel(); if (deploymentTask != null) await deploymentTask; Stop(); if (runTask != null) await runTask; timer.Stop(); }
     private void UseBaseline() { if (run != null) { baseline = new(run, targets); Save(); Refresh(); } }
     private void Save()
     {
@@ -187,7 +215,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private void Refresh()
     {
         PropertyChanged?.Invoke(this, new(null));
-        foreach (var command in new[] { TestCommand, StartCommand, StopCommand, EditCommand, DrawerCommand, BaselineCommand, ClearBaselineCommand }) command.Refresh();
+        foreach (var command in new[] { DeployCommand, TestCommand, StartCommand, StopCommand, EditCommand, DrawerCommand, BaselineCommand, ClearBaselineCommand }) command.Refresh();
     }
 
     // Used only by the separate offline screenshot project. No simulated mode in the app.

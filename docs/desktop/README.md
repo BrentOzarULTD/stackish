@@ -1,12 +1,12 @@
 # Run the Stackish desktop workload
 
-The first desktop version targets Windows and macOS. Use it to generate ongoing activity during migration rehearsals or compare before/after tuning runs. The app does not install database objects, change indexes, or restore data; the separate deployment entry point now installs missing supporting indexes. Linux packaging is deferred.
+The first desktop version targets Windows and macOS. Use it to generate ongoing activity during migration rehearsals or compare before/after tuning runs. The app can install/update its procedures and function explicitly. It never changes indexes or restores data; the optional [index script](../../sql/indexes.sql) is separate. Linux packaging is deferred.
 
 Mac downloads have been withdrawn after a bundle-signature defect was reproduced in the published ZIP. Build locally for now; the repaired packaging process verifies ZIP extraction but local ad-hoc signing does not establish Gatekeeper acceptance. The Windows preview remains available from [GitHub Releases](https://github.com/BrentOzarULTD/stackish/releases/tag/v0.1.0-preview.1). Extract the whole Windows archive and open `Stackish.exe` inside its folder. Keep the Windows companion files together. The packages include .NET; an SDK is only needed to build from source.
 
 ## Run, tune, compare
 
-1. Install Stackish in your chosen training database using the [installation guide](../installation.md).
+1. Restore your training database. Enter its connection details in the app and click **Install / update Stackish** for a fresh restore. This replaces Stackish module definitions and clears the saved baseline. Optional indexes are a separate choice in the [installation guide](../installation.md).
 2. Open the app, enter the server/database and SQL login, then **Test connection**. That check verifies the engine, compatibility, schema, lookups and installed inventory without changing them. Passwords stay in memory and are never saved.
 3. Choose concurrent operations and **Start workload**. The app selects eligible targets and opens worker connections before starting the measured interval. No SQL or parameter mappings are needed.
 4. Click **Stop**. New calls stop, active calls drain, and the first nonfailed run of at least five seconds with completed calls becomes the baseline. After 30 seconds the app requests cancellation of remaining calls, then waits for the database driver to finish. Cancellation is not proof that a write did not commit.
@@ -58,6 +58,16 @@ These are offline renders of the implemented controls with clearly marked illust
 ![Before/after comparison while running](screenshots/comparison-running.png)
 
 ![Stopped comparison with baseline controls](screenshots/comparison-stopped.png)
+
+## Installer validation
+
+The maintainer client can exercise the exact app installer twice and compare all base-table index definitions before and after. It checks readiness after each installation and does not start a workload. Set the connection environment variables documented in the installation guide, then run:
+
+```sh
+dotnet run --project desktop/Stackish.LiveChecks -c Release -- --deploy-only --allow-mutations
+```
+
+Use `--trust-certificate` only for a lab server whose certificate policy requires it. Installation replaces Stackish module definitions; this is not a read-only check.
 
 ## Bounded maintainer validation
 
@@ -133,4 +143,4 @@ Repeat steps 4–6 with `osx-x64` for Intel. Keep release candidates in a draft 
 - Run a 30-minute continuous workload from the downloaded app, record errors, operation outcomes, durations and successful reads/writes, and verify Stop/drain completes. Keep platform-specific results explicit; engine-only or screenshot tests do not count as GUI validation.
 - Recheck hashes against tested candidates before publishing. Publish only the platforms that pass. If Apple rejects a build or a platform cannot be tested, leave that platform unavailable and report the exact remaining step. Do not remove quarantine, disable Gatekeeper or describe an untested app as ready.
 
-Validation on October 2, 2026: both Mac architectures built from `ff8c649` were Developer ID-signed, accepted by Apple, stapled, and verified after ZIP extraction. Both pass Gatekeeper as Notarized Developer ID. The actual ARM64 candidate downloaded from the draft GitHub release has the same SHA-256 hash as the uploaded ZIP and opens successfully with quarantine explicitly added after the CLI download; this is not a browser-download test. Its readiness check correctly rejected the test database because all 43 Stackish objects were absent. Redeployment and downloaded-app workload validation are in progress. Native Windows and Intel Mac GUI validation remain outstanding; public Mac downloads remain withheld pending the release acceptance checks.
+Validation on October 2, 2026: both Mac architectures built from `ff8c649` were Developer ID-signed, accepted by Apple, stapled, and verified after ZIP extraction. Both pass Gatekeeper as Notarized Developer ID. The actual ARM64 candidate downloaded from the draft GitHub release has the same SHA-256 hash as the uploaded ZIP and opens successfully with quarantine explicitly added after the CLI download; this is not a browser-download test. Its readiness check correctly rejected the test database because all 43 Stackish objects were absent. Those older candidate ZIPs predate the in-app installer. The current installer backend subsequently passed two installations against the newly restored testbed with inventory checks and unchanged index definitions; a local ARM64 app also completed installation through its button and reached Ready. No workload ran during these installer checks. Updated signed downloads and downloaded-app workload validation remain pending. Native Windows and Intel Mac GUI validation remain outstanding; public Mac downloads remain withheld pending the release acceptance checks.

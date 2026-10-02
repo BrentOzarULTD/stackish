@@ -37,6 +37,11 @@
             <TextBlock Classes="helper" Text="Password is not saved" VerticalAlignment="Center" />
           </StackPanel>
         </StackPanel>
+        <StackPanel IsVisible="{Binding ShowConnection}" Margin="20,0,20,14" Spacing="6">
+          <TextBlock Text="Fresh restore? Install Stackish’s procedures and function here. Updating replaces existing Stackish procedures, including your tuning changes, and clears the saved baseline. Indexes are optional and managed separately; see the README." TextWrapping="Wrap" Classes="helper" />
+          <Button Classes="secondary" Content="Install / update Stackish" Command="{Binding DeployCommand}" HorizontalAlignment="Left" />
+          <TextBlock IsVisible="{Binding Deploying}" Text="{Binding DeploymentProgress}" TextWrapping="Wrap" Classes="helper" />
+        </StackPanel>
         <Border IsVisible="{Binding HasMessage}" Background="#FBE9E7" CornerRadius="6" Padding="12,10" Margin="20,0,20,14">
           <TextBlock Text="{Binding Message}" Foreground="#7A1A14" TextWrapping="Wrap" />
         </Border>

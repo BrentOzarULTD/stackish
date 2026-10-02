@@ -29,6 +29,21 @@ public sealed partial class SqlWorkloadBackend(ConnectionSettings settings, stri
         return connection.ServerVersion;
     }
 
+    public async Task DeployAsync(IProgress<string>? progress = null, CancellationToken token = default)
+    {
+        await using var connection = new SqlConnection(ConnectionString);
+        await connection.OpenAsync(token);
+        var batches = DatabaseDeployment.Batches().ToArray();
+        for (int i = 0; i < batches.Length; i++)
+        {
+            var batch = batches[i];
+            progress?.Report(batch.Source == "preflight.sql" ? "Checking database requirements…" :
+                batch.Source == "inventory.sql" ? "Verifying installed objects…" : $"Installing database objects: step {i + 1} of {batches.Length}…");
+            await using var command = new SqlCommand(batch.Sql, connection) { CommandTimeout = 60 };
+            await command.ExecuteNonQueryAsync(token);
+        }
+    }
+
     public static IEnumerable<string> ReadinessBatches() => new[] { "preflight.sql", "inventory.sql" }
         .SelectMany(name => Regex.Split(WorkloadFiles.Read(name), @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase))
         .Where(batch => !string.IsNullOrWhiteSpace(batch));
@@ -103,7 +118,7 @@ public sealed partial class SqlWorkloadBackend(ConnectionSettings settings, stri
 
     public static string Explain(Exception exception) => exception is SqlException sql ? sql.Number switch
     {
-        51004 => "Stackish is not fully installed in this database, or extra Stackish objects are present. Run the complete deployment and inventory check before starting.",
+        51004 => "Stackish is not fully installed in this database, or extra Stackish objects are present. Use Install / update Stackish to install its procedures and function. Unexpected extra Stackish objects must be reviewed separately.",
         18456 => "Login rejected. Check the username and password. (SQL 18456)",
         4060 => "The database is unavailable or this login cannot access it. (SQL 4060)",
         -2 => "The operation timed out. The server may be busy or the query may be expensive.",
