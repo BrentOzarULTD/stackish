@@ -2,7 +2,7 @@
 
 The first desktop version targets Windows and macOS. Use it to generate ongoing activity during migration rehearsals or compare before/after tuning runs. The app does not install database objects, change indexes, or restore data; the separate deployment entry point now installs missing supporting indexes. Linux packaging is deferred.
 
-Download an unsigned build from [GitHub Releases](https://github.com/BrentOzarULTD/stackish/releases/tag/v0.1.0-preview.1). Unzip the archive and open `Stackish.app` on Mac, or extract the whole Windows archive and open `Stackish.exe` inside its folder. Keep the Windows companion files together. The packages include .NET; an SDK is only needed to build from source.
+Mac downloads have been withdrawn after a bundle-signature defect was reproduced in the published ZIP. Build locally for now; the repaired packaging process verifies ZIP extraction but local ad-hoc signing does not establish Gatekeeper acceptance. The Windows preview remains available from [GitHub Releases](https://github.com/BrentOzarULTD/stackish/releases/tag/v0.1.0-preview.1). Extract the whole Windows archive and open `Stackish.exe` inside its folder. Keep the Windows companion files together. The packages include .NET; an SDK is only needed to build from source.
 
 ## Run, tune, compare
 
@@ -35,7 +35,7 @@ dotnet test desktop/Stackish.Tests
 dotnet run --project desktop/Stackish.Desktop
 ```
 
-Generate self-contained review builds:
+Generate self-contained developer builds (Mac packaging must run on macOS):
 
 ```sh
 python3 desktop/package.py --runtime osx-arm64
@@ -43,7 +43,7 @@ python3 desktop/package.py --runtime osx-x64
 python3 desktop/package.py --runtime win-x64
 ```
 
-macOS output: `desktop/artifacts/<runtime>/Stackish.app`. Windows output: `desktop/artifacts/win-x64/publish/Stackish.exe`; keep its accompanying files together. Each runtime directory also contains a ready-to-share ZIP. The Mac ZIP preserves the app executable permissions. These are unsigned development builds, not signed/notarized public installers. Native Windows execution and Intel Mac execution must be validated on those platforms before claiming release readiness. The CI workflow builds and tests the Windows/Mac targets without a database or credentials; it never starts a live workload.
+macOS output: `desktop/artifacts/<runtime>/Stackish.app`. Windows output: `desktop/artifacts/win-x64/publish/Stackish.exe`; keep its accompanying files together. Each runtime directory also contains a ready-to-share ZIP. The Mac ZIP preserves the app executable permissions. Mac bundles receive an ad-hoc integrity signature and Windows builds remain unsigned. These are development builds, not Developer ID-signed/notarized public Mac installers. Native Windows execution and Intel Mac execution must be validated on those platforms before claiming release readiness. The CI workflow builds and tests the Windows/Mac targets without a database or credentials; it never starts a live workload.
 
 Nonsecret connection settings and one baseline (including sampled IDs, measurements, and error summaries) are stored under the current user's local application-data directory in `Stackish/state.json`. It contains no password. A failed save is reported in the app. Do not commit local state or real connection details.
 
@@ -76,3 +76,15 @@ dotnet run --project desktop/Stackish.LiveChecks -c Release -- --allow-mutations
 ```
 
 `--seconds` is the measured duration per run (10–86,400 seconds); `--runs` accepts one or two and defaults to two. Setup and stopping time are additional. The normal desktop app still runs until you press Stop. The continuous check commits writes and includes expensive searches; its duration is not a guarantee of uniform throughput or uninterrupted successful writes.
+
+## Verify the package before distribution
+
+Packaging verifies a fresh extraction of the final ZIP. Mac verification checks executable permissions, architecture, and the entire bundle signature, including nested runtime files. Mac ZIPs use `ditto` to retain the signature metadata needed by managed assemblies.
+
+Integrity verification alone is not a downloaded-app launch test. Before a Mac build is described as ready for public use, it must be Developer ID-signed and notarized, and the final downloaded archive must pass:
+
+```sh
+python3 desktop/verify_package.py Stackish-osx-arm64.zip --runtime osx-arm64 --require-notarized
+```
+
+Use `osx-x64` for Intel Mac. This requires both a valid stapled notarization ticket and Gatekeeper acceptance. Then test opening the downloaded app through Finder with download quarantine intact, on each supported Mac architecture. Test the downloaded Windows archive on Windows too. A local launch, CI build, checksum, or headless render does not substitute for those checks. Do not remove quarantine or disable Gatekeeper to make a distribution test pass.
