@@ -86,6 +86,9 @@ public sealed partial class SqlWorkloadBackend(ConnectionSettings settings, stri
             command.Parameters["@InputTargets"].Value = targets;
             command.Parameters["@RunOperation"].Value = operation.GroupRoll;
             command.Parameters["@RunChoice"].Value = operation.Choice;
+            // Keep cancellation registered through reader disposal, including gaps between reads.
+            using var cancellation = token.Register(() => command.Cancel());
+            token.ThrowIfCancellationRequested();
             string? outcome = null;
             await using var reader = await command.ExecuteReaderAsync(token);
             do

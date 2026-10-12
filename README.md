@@ -87,11 +87,11 @@ For the Windows preview, extract the entire ZIP and open `Stackish.exe`; keep it
 3. Choose the number of **Concurrent operations**. Start small—four is a reasonable first check—and click **Start workload**.
 4. Check completed calls, successful writes, and **Errors & outcomes**. A successful connection check alone does not prove the workload is running successfully.
 5. Leave the app open and the computer awake while you want activity. It runs until you stop it; no SQL batches, parameter mappings, or additional runner instances are needed.
-6. Click **Stop** and wait for **Stopped** before restoring the database or treating the source as quiescent for a cutover. Stop prevents new calls, allows active calls to finish, and requests cancellation after 30 seconds if necessary. Writes can still commit while stopping; cancellation does not prove a write was rolled back. Stop any other writers separately too.
+6. Click **Stop** and wait for **Stopped** before restoring the database or treating the source as quiescent for a cutover. Stop prevents new calls and immediately sends cancellation for active queries. The app waits only for cancellation and connection cleanup, not for queries to finish normally. Writes can still commit while stopping; cancellation does not prove a write was rolled back. Stop any other writers separately too.
 
 The mix selects roughly **55% read calls and 45% write calls**, including hot targets, content creation, and occasional expensive searches and aggregations. Those are invocation proportions, not shares of CPU or elapsed time. Long-running reads can occupy workers for a while. Some completed calls legitimately report `Conflict`, `NoChange`, or `NotFound`; watch those alongside successful writes and errors, especially during long rehearsals as the data changes.
 
-The password stays in memory. The app saves nonsecret connection settings and a baseline locally, including sampled IDs and error summaries; keep that local state out of your repository as well.
+By default, the password stays in memory. Check **Remember password** to store it in macOS Keychain or Windows Credential Manager after a successful connection. It reloads on the next launch for that connection; use **Load saved password** after changing connection details. Uncheck Remember password to remove that connection’s saved password. The app saves nonsecret connection settings and a baseline locally, including sampled IDs and error summaries; keep that local state out of your repository as well.
 
 ## Compare before and after tuning
 

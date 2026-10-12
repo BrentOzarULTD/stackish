@@ -1,6 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:Stackish.Desktop" x:Class="Stackish.Desktop.MainWindow" x:DataType="local:MainViewModel"
-        Title="Stackish" Width="1280" Height="800" MinWidth="960" MinHeight="640">
+        Icon="/Assets/Stackish.ico" Title="Stackish" Width="1280" Height="800" MinWidth="960" MinHeight="640">
   <Grid RowDefinitions="Auto,*">
     <Border Background="White" BorderBrush="#E4E0DA" BorderThickness="0,0,0,1">
       <StackPanel>
@@ -34,8 +34,12 @@
           <StackPanel Orientation="Horizontal" Spacing="20">
             <TextBlock Classes="helper" Text="Server accepts name, name\instance, or name,port" VerticalAlignment="Center" />
             <CheckBox Content="Trust server certificate" IsChecked="{Binding TrustCertificate}" FontSize="13" MinHeight="24" />
-            <TextBlock Classes="helper" Text="Password is not saved" VerticalAlignment="Center" />
           </StackPanel>
+          <WrapPanel Orientation="Horizontal">
+            <CheckBox Content="{Binding RememberPasswordLabel}" IsChecked="{Binding RememberPassword}" FontSize="13" MinHeight="24" Margin="0,0,16,0" />
+            <Button Content="Load saved password" Command="{Binding LoadPasswordCommand}" Classes="secondary" Margin="0,0,16,0" />
+            <TextBlock Classes="helper" Text="{Binding PasswordHint}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </WrapPanel>
         </StackPanel>
         <StackPanel IsVisible="{Binding ShowConnection}" Margin="20,0,20,14" Spacing="6">
           <TextBlock Text="Fresh restore? Install Stackish’s procedures and function here. Updating replaces existing Stackish procedures, including your tuning changes, and clears the saved baseline. Indexes are optional and managed separately; see the README." TextWrapping="Wrap" Classes="helper" />
@@ -110,8 +114,8 @@
             </Grid>
             <StackPanel Grid.Row="1" Spacing="6" Margin="0,8,0,4">
               <StackPanel Orientation="Horizontal" Spacing="18">
-                <TextBlock Text="┄┄  Baseline (before)" Foreground="#6E717A" FontSize="13" />
-                <TextBlock Text="━━  Current run (after)" Foreground="#2F6DB5" FontSize="13" />
+                <TextBlock IsVisible="{Binding HasPreviousRun}" Text="┄┄  Previous run" Foreground="#6E717A" FontSize="13" />
+                <TextBlock Text="━━  Current run" Foreground="#2F6DB5" FontSize="13" />
               </StackPanel>
               <TextBlock Text="{Binding ComparisonText}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
             </StackPanel>
