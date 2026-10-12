@@ -114,7 +114,7 @@ internal sealed class MacPasswordStore : IPasswordStore
         try
         {
             byte[] bytes = new byte[checked((int)CFDataGetLength(data))];
-            try { Marshal.Copy(CFDataGetBytePtr(data), bytes, 0, bytes.Length); return Encoding.UTF8.GetString(bytes); }
+            try { Marshal.Copy(CFDataGetBytePtr(data), bytes, 0, bytes.Length); return JsonSerializer.Deserialize<string>(bytes) ?? throw new InvalidDataException("Invalid saved password format."); }
             finally { CryptographicOperations.ZeroMemory(bytes); }
         }
         finally { CFRelease(data); }
@@ -123,14 +123,20 @@ internal sealed class MacPasswordStore : IPasswordStore
     {
         using var query = Query(connection);
         using var values = new Dictionary();
-        values.Data("kSecValueData", password);
+        // The login Keychain can ignore a zero-byte update. JSON encodes even an empty password as nonempty data.
+        string encoded = JsonSerializer.Serialize(password);
+        values.Data("kSecValueData", encoded);
         int status = SecItemUpdate(query.Handle, values.Handle);
         if (status == NotFound)
         {
-            query.Data("kSecValueData", password);
+            query.Data("kSecValueData", encoded);
             query.Text("kSecAttrLabel", "Stackish database password");
             status = SecItemAdd(query.Handle, IntPtr.Zero);
-            if (status == Duplicate) status = SecItemUpdate(query.Handle, values.Handle);
+            if (status == Duplicate)
+            {
+                using var retry = Query(connection);
+                status = SecItemUpdate(retry.Handle, values.Handle);
+            }
         }
         Check(status);
     }
@@ -144,7 +150,7 @@ internal sealed class MacPasswordStore : IPasswordStore
     {
         var query = new Dictionary();
         query.Set("kSecClass", Symbol("kSecClassGenericPassword"));
-        query.Text("kSecAttrService", "com.brentozar.stackish.database-password");
+        query.Text("kSecAttrService", "com.brentozar.stackish.database-password.v1");
         query.Text("kSecAttrAccount", PasswordStore.Key(connection));
         return query;
     }

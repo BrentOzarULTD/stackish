@@ -25,6 +25,8 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore desktop/Stackish.slnx --locked-mode
       - run: dotnet test desktop/Stackish.Tests -c Release --no-restore
+        env:
+          STACKISH_TEST_NATIVE_VAULT: ${{ runner.os == 'Windows' && '1' || '0' }}
       - run: dotnet run --project desktop/Stackish.Preview -c Release -- desktop/artifacts/screenshots
       - run: python desktop/package.py --runtime ${{ matrix.runtime }}
       - uses: actions/upload-artifact@v4
